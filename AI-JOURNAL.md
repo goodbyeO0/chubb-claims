@@ -45,3 +45,9 @@ Accepted Spring Security's SPA CSRF support (official 7.0 reference https://docs
 Accepted explicit repository INSERT at version 1 followed by managed JPA updates. Database sequence generates references; server derives currency, claimant and timestamps. Explicit response allowlists omit internal fields; no entity is serialized. Submission, audit and full initial outbox payload share the transaction. Unknown JSON keys are rejected, and market-local date validation uses an injectable Clock.
 
 `./mvnw -Dtest=ClaimIntakeTest test`: PASS, 2 tests, 0 failures/errors/skips. Verified persisted claim/event/outbox counts, payload identity/version/NULL reserve, exact fixed timestamp, cross-owner list/detail isolation, officer submission denial and zero writes for blank/unknown/future/forged input. Diff reviewed; migration unchanged. Staff-event visibility is additionally exercised with reserve actions in stage 5.
+
+## 2026-11-21 — Stage 4: pickup and information handoff
+
+Accepted JPA optimistic locking with an explicit expectedVersion check before state checks. Assignment writes flush before audit creation; assigned-officer authorization precedes stale/state checks for subsequent commands. Request ownership and claim/request association are verified before answering. Nonfinancial changes do not create reporting events.
+
+`./mvnw -Dtest=ClaimWorkflowTest test`: PASS, 2 tests, 0 failures/errors/skips. Concurrent pickup used two HTTP requests, a barrier after both loaded the row, and two distinct `pg_backend_pid()` connections: exactly one 200, one 409, one assignment event. Handoff verified one pending question, wrong officer 403, wrong claimant/request 404, answer restoration, stale replay, queue filters and unchanged outbox count. Reviewed diff and `git diff --cached --check` PASS.
