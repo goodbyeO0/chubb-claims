@@ -1,5 +1,21 @@
 # Chubb APAC claims workbench
 
+## Local development status
+
+Implementation is in progress; see [AI-JOURNAL.md](AI-JOURNAL.md) for executed gates. The supplied stage descriptions below are acceptance criteria, not claims that all features exist.
+
+Prerequisites: Docker Engine with Compose, Java 21 for host-side backend tests, Python 3 for contract checks. Maven 3.9.11 is supplied by `backend/mvnw`. The Docker build does not require host Java.
+
+```sh
+# From this repository root:
+docker compose up --build -d
+# If 8080 is occupied: API_PORT=18080 docker compose up --build -d
+curl -fsS http://localhost:8080/actuator/health
+(cd backend && ./mvnw -Dtest=FoundationTest test)
+```
+
+On Linux Docker Desktop, if Testcontainers cannot discover Docker, set `DOCKER_HOST=unix://$HOME/.docker/desktop/docker.sock`. Keep the Docker daemon running. Do not delete an existing database volume to retry a failed test.
+
 Implementation guide for Codex and Izhan. Build a locally runnable application for reporting motor and property incidents, assessing claims and tracking team workload and outstanding reserves. The reviewer should be able to sign in as a claimant, respond to an officer’s question and see the final decision. Staff should be able to explain each decision from the timeline and trace a delayed dashboard update using one event ID.
 
 **Start with the [OpenAPI contract](api/openapi.yaml).** It defines the HTTP operations, actors, payloads, examples and error codes. The [database migration](backend/src/main/resources/db/migration/V1__claims.sql) defines storage. The [Kafka contract](api/exposure-event.schema.json) defines the reporting message. An HTTP response is a role-specific view of the data. Returning a database entity directly would expose internal fields.
