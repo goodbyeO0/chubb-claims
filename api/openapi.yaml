@@ -1,0 +1,2288 @@
+openapi: 3.1.1
+info:
+  title: Claims workbench API
+  version: 1.0.0
+  description: Contract for a same-origin browser application. Time values are RFC 3339 instants. Monetary amounts are
+    decimal strings. Successful commands return a fresh representation including version. Dates in examples are fixed
+    demo data.
+servers:
+- url: /
+security:
+- session: []
+paths:
+  /actuator/health:
+    get:
+      operationId: health
+      summary: Public summary. Limit detail to status.
+      tags:
+      - Public
+      x-allowed-roles: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              examples:
+                healthy:
+                  value:
+                    status: UP
+        '503':
+          description: Unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              examples:
+                unhealthy:
+                  value:
+                    status: DOWN
+      security: []
+  /api/auth/csrf:
+    get:
+      operationId: csrf
+      summary: Materialize a fresh CSRF cookie before login and after authentication changes.
+      tags:
+      - Public
+      x-allowed-roles: []
+      responses:
+        '204':
+          description: Success
+          headers:
+            Set-Cookie:
+              description: XSRF-TOKEN cookie readable by Angular.
+              schema:
+                type: string
+      security: []
+  /api/auth/login:
+    post:
+      operationId: login
+      summary: Authenticate form fields. No redirects.
+      tags:
+      - Public
+      x-allowed-roles: []
+      responses:
+        '204':
+          description: Success
+          headers:
+            Set-Cookie:
+              description: Session cookie, HttpOnly; Secure on HTTPS.
+              schema:
+                type: string
+        '401':
+          description: HTTP 401
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                BAD_CREDENTIALS:
+                  value:
+                    code: BAD_CREDENTIALS
+                    message: Sign-in failed.
+        '403':
+          description: HTTP 403
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                CSRF_INVALID:
+                  value:
+                    code: CSRF_INVALID
+                    message: Refresh the CSRF token.
+      security: []
+      parameters:
+      - name: X-XSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Copy the current XSRF-TOKEN cookie. Required for login and logout too.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+            examples:
+              normal:
+                value:
+                  username: aina
+                  password: local-demo-only
+  /api/auth/me:
+    get:
+      operationId: me
+      summary: Read the current user.
+      tags:
+      - Authenticated
+      x-allowed-roles: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              examples:
+                claimant:
+                  value:
+                    id: 00000000-0000-4000-8000-000000000001
+                    displayName: Aina
+                    role: CLAIMANT
+                officer:
+                  value:
+                    id: 00000000-0000-4000-8000-000000000010
+                    displayName: Farah
+                    role: OFFICER
+        '401':
+          description: HTTP 401
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                UNAUTHENTICATED:
+                  value:
+                    code: UNAUTHENTICATED
+                    message: Sign in to continue.
+  /api/auth/logout:
+    post:
+      operationId: logout
+      summary: Invalidate the server session.
+      tags:
+      - Authenticated
+      x-allowed-roles: []
+      responses:
+        '204':
+          description: Success
+        '401':
+          description: HTTP 401
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                UNAUTHENTICATED:
+                  value:
+                    code: UNAUTHENTICATED
+                    message: Sign in to continue.
+        '403':
+          description: HTTP 403
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                CSRF_INVALID:
+                  value:
+                    code: CSRF_INVALID
+                    message: Refresh the CSRF token.
+      parameters:
+      - name: X-XSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Copy the current XSRF-TOKEN cookie. Required for login and logout too.
+  /api/claims:
+    post:
+      operationId: submitClaim
+      summary: Submit an incident for the current claimant. Currency is derived from market.
+      tags:
+      - CLAIMANT
+      x-allowed-roles:
+      - CLAIMANT
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+              examples:
+                submitted:
+                  value:
+                    kind: MOTOR
+                    market: MY
+                    incidentOn: '2026-11-18'
+                    description: Rear bumper damaged in a collision.
+                    id: 00000000-0000-4000-8000-000000000101
+                    claimRef: CL-101
+                    currency: MYR
+                    status: SUBMITTED
+                    version: 1
+                    submittedAt: '2026-11-20T01:00:00Z'
+                    closedAt: null
+                    settlement: null
+                    requests: []
+                    timeline:
+                    - type: CLAIM_SUBMITTED
+                      at: '2026-11-20T01:00:00Z'
+                      message: Claim received.
+        '401':
+          description: HTTP 401
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                UNAUTHENTICATED:
+                  value:
+                    code: UNAUTHENTICATED
+                    message: Sign in to continue.
+        '403':
+          description: HTTP 403
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                FORBIDDEN:
+                  value:
+                    code: FORBIDDEN
+                    message: Access denied.
+                CSRF_INVALID:
+                  value:
+                    code: CSRF_INVALID
+                    message: Refresh the CSRF token.
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                INVALID_INPUT:
+                  value:
+                    code: INVALID_INPUT
+                    message: Check the submitted fields.
+      parameters:
+      - name: X-XSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Copy the current XSRF-TOKEN cookie. Required for login and logout too.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Submit'
+            examples:
+              normal:
+                value:
+                  kind: MOTOR
+                  market: MY
+                  incidentOn: '2026-11-18'
+                  description: Rear bumper damaged in a collision.
+    get:
+      operationId: myClaims
+      summary: List own claims newest first, tie-break by id.
+      tags:
+      - CLAIMANT
+      x-allowed-roles:
+      - CLAIMANT
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claims'
+              examples:
+                empty:
+                  value: []
+                normal:
+                  value:
+                  - kind: MOTOR
+                    market: MY
+                    incidentOn: '2026-11-18'
+                    description: Rear bumper damaged in a collision.
+                    id: 00000000-0000-4000-8000-000000000101
+                    claimRef: CL-101
+                    currency: MYR
+                    status: SUBMITTED
+                    version: 1
+                    submittedAt: '2026-11-20T01:00:00Z'
+                    closedAt: null
+                    settlement: null
+                    requests: []
+                    timeline:
+                    - type: CLAIM_SUBMITTED
+                      at: '2026-11-20T01:00:00Z'
+                      message: Claim received.
+        '401':
+          description: HTTP 401
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                UNAUTHENTICATED:
+                  value:
+                    code: UNAUTHENTICATED
+                    message: Sign in to continue.
+        '403':
+          description: HTTP 403
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                FORBIDDEN:
+                  value:
+                    code: FORBIDDEN
+                    message: Access denied.
+  /api/claims/{id}:
+    get:
+      operationId: myClaim
+      summary: Own detail only. Other owners receive 404.
+      tags:
+      - CLAIMANT
+      x-allowed-roles:
+      - CLAIMANT
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+              examples:
+                submitted:
+                  value:
+                    kind: MOTOR
+                    market: MY
+                    incidentOn: '2026-11-18'
+                    description: Rear bumper damaged in a collision.
+                    id: 00000000-0000-4000-8000-000000000101
+                    claimRef: CL-101
+                    currency: MYR
+                    status: SUBMITTED
+                    version: 1
+                    submittedAt: '2026-11-20T01:00:00Z'
+                    closedAt: null
+                    settlement: null
+                    requests: []
+                    timeline:
+                    - type: CLAIM_SUBMITTED
+                      at: '2026-11-20T01:00:00Z'
+                      message: Claim received.
+                awaitingInfo:
+                  value:
+                    kind: MOTOR
+                    market: MY
+                    incidentOn: '2026-11-18'
+                    description: Rear bumper damaged in a collision.
+                    id: 00000000-0000-4000-8000-000000000101
+                    claimRef: CL-101
+                    currency: MYR
+                    status: AWAITING_INFO
+                    version: 3
+                    submittedAt: '2026-11-20T01:00:00Z'
+                    closedAt: null
+                    settlement: null
+                    requests:
+                    - id: 00000000-0000-4000-8000-000000000201
+                      question: Workshop estimate for bumper repair?
+                      askedAt: '2026-11-20T01:12:00Z'
+                      answer: null
+                      answeredAt: null
+                    timeline:
+                    - type: CLAIM_SUBMITTED
+                      at: '2026-11-20T01:00:00Z'
+                      message: Claim received.
+                    - type: CLAIM_ASSIGNED
+                      at: '2026-11-20T01:05:00Z'
+                      message: An officer is reviewing your claim.
+                    - type: INFO_REQUESTED
+                      at: '2026-11-20T01:12:00Z'
+                      message: Workshop estimate for bumper repair?
+                answered:
+                  value:
+                    kind: MOTOR
+                    market: MY
+                    incidentOn: '2026-11-18'
+                    description: Rear bumper damaged in a collision.
+                    id: 00000000-0000-4000-8000-000000000101
+                    claimRef: CL-101
+                    currency: MYR
+                    status: UNDER_REVIEW
+                    version: 4
+                    submittedAt: '2026-11-20T01:00:00Z'
+                    closedAt: null
+                    settlement: null
+                    requests:
+                    - id: 00000000-0000-4000-8000-000000000201
+                      question: Workshop estimate for bumper repair?
+                      askedAt: '2026-11-20T01:12:00Z'
+                      answer: Parts, labour and paint total MYR 5,000.
+                      answeredAt: '2026-11-20T02:30:00Z'
+                    timeline:
+                    - type: CLAIM_SUBMITTED
+                      at: '2026-11-20T01:00:00Z'
+                      message: Claim received.
+                    - type: CLAIM_ASSIGNED
+                      at: '2026-11-20T01:05:00Z'
+                      message: An officer is reviewing your claim.
+                    - type: INFO_REQUESTED
+                      at: '2026-11-20T01:12:00Z'
+                      message: Workshop estimate for bumper repair?
+                    - type: INFO_PROVIDED
+                      at: '2026-11-20T02:30:00Z'
+                      message: Parts, labour and paint total MYR 5,000.
+                settled:
+                  value:
+                    kind: MOTOR
+                    market: MY
+                    incidentOn: '2026-11-18'
+                    description: Rear bumper damaged in a collision.
+                    id: 00000000-0000-4000-8000-000000000101
+                    claimRef: CL-101
+                    currency: MYR
+                    status: SETTLED
+                    version: 6
+                    submittedAt: '2026-11-20T01:00:00Z'
+                    closedAt: '2026-11-20T03:00:00Z'
+                    settlement: '4200.00'
+                    requests:
+                    - id: 00000000-0000-4000-8000-000000000201
+                      question: Workshop estimate for bumper repair?
+                      askedAt: '2026-11-20T01:12:00Z'
+                      answer: Parts, labour and paint total MYR 5,000.
+                      answeredAt: '2026-11-20T02:30:00Z'
+                    timeline:
+                    - type: CLAIM_SUBMITTED
+                      at: '2026-11-20T01:00:00Z'
+                      message: Claim received.
+                    - type: CLAIM_ASSIGNED
+                      at: '2026-11-20T01:05:00Z'
+                      message: An officer is reviewing your claim.
+                    - type: INFO_REQUESTED
+                      at: '2026-11-20T01:12:00Z'
+                      message: Workshop estimate for bumper repair?
+                    - type: INFO_PROVIDED
+                      at: '2026-11-20T02:30:00Z'
+                      message: Parts, labour and paint total MYR 5,000.
+                    - type: CLAIM_SETTLED
+                      at: '2026-11-20T03:00:00Z'
+                      message: Settled for MYR 4,200.00.
+                rejected:
+                  value:
+                    kind: MOTOR
+                    market: MY
+                    incidentOn: '2026-11-18'
+                    description: Rear bumper damaged in a collision.
+                    id: 00000000-0000-4000-8000-000000000101
+                    claimRef: CL-101
+                    currency: MYR
+                    status: REJECTED
+                    version: 3
+                    submittedAt: '2026-11-20T01:00:00Z'
+                    closedAt: '2026-11-20T01:12:00Z'
+                    settlement: null
+                    requests: []
+                    timeline:
+                    - type: CLAIM_SUBMITTED
+                      at: '2026-11-20T01:00:00Z'
+                      message: Claim received.
+                    - type: CLAIM_ASSIGNED
+                      at: '2026-11-20T01:05:00Z'
+                      message: An officer is reviewing your claim.
+                    - type: CLAIM_REJECTED
+                      at: '2026-11-20T01:12:00Z'
+                      message: Duplicate incident confirmed by claimant.
+        '404':
+          description: HTTP 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                NOT_FOUND:
+                  value:
+                    code: NOT_FOUND
+                    message: Claim or request not found.
+        '401':
+          description: HTTP 401
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                UNAUTHENTICATED:
+                  value:
+                    code: UNAUTHENTICATED
+                    message: Sign in to continue.
+        '403':
+          description: HTTP 403
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                FORBIDDEN:
+                  value:
+                    code: FORBIDDEN
+                    message: Access denied.
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                INVALID_INPUT:
+                  value:
+                    code: INVALID_INPUT
+                    message: Check the submitted fields.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/claims/{id}/requests/{requestId}/answer:
+    post:
+      operationId: answerRequest
+      summary: Answer the one open request on your own claim.
+      tags:
+      - CLAIMANT
+      x-allowed-roles:
+      - CLAIMANT
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+              examples:
+                answered:
+                  value:
+                    kind: MOTOR
+                    market: MY
+                    incidentOn: '2026-11-18'
+                    description: Rear bumper damaged in a collision.
+                    id: 00000000-0000-4000-8000-000000000101
+                    claimRef: CL-101
+                    currency: MYR
+                    status: UNDER_REVIEW
+                    version: 4
+                    submittedAt: '2026-11-20T01:00:00Z'
+                    closedAt: null
+                    settlement: null
+                    requests:
+                    - id: 00000000-0000-4000-8000-000000000201
+                      question: Workshop estimate for bumper repair?
+                      askedAt: '2026-11-20T01:12:00Z'
+                      answer: Parts, labour and paint total MYR 5,000.
+                      answeredAt: '2026-11-20T02:30:00Z'
+                    timeline:
+                    - type: CLAIM_SUBMITTED
+                      at: '2026-11-20T01:00:00Z'
+                      message: Claim received.
+                    - type: CLAIM_ASSIGNED
+                      at: '2026-11-20T01:05:00Z'
+                      message: An officer is reviewing your claim.
+                    - type: INFO_REQUESTED
+                      at: '2026-11-20T01:12:00Z'
+                      message: Workshop estimate for bumper repair?
+                    - type: INFO_PROVIDED
+                      at: '2026-11-20T02:30:00Z'
+                      message: Parts, labour and paint total MYR 5,000.
+        '404':
+          description: HTTP 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                NOT_FOUND:
+                  value:
+                    code: NOT_FOUND
+                    message: Claim or request not found.
+        '409':
+          description: HTTP 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                VERSION_CONFLICT:
+                  value:
+                    code: VERSION_CONFLICT
+                    message: This claim was updated. Refresh to continue.
+                INVALID_STATE:
+                  value:
+                    code: INVALID_STATE
+                    message: This action is unavailable in the current state.
+        '401':
+          description: HTTP 401
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                UNAUTHENTICATED:
+                  value:
+                    code: UNAUTHENTICATED
+                    message: Sign in to continue.
+        '403':
+          description: HTTP 403
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                FORBIDDEN:
+                  value:
+                    code: FORBIDDEN
+                    message: Access denied.
+                CSRF_INVALID:
+                  value:
+                    code: CSRF_INVALID
+                    message: Refresh the CSRF token.
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                INVALID_INPUT:
+                  value:
+                    code: INVALID_INPUT
+                    message: Check the submitted fields.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: requestId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-XSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Copy the current XSRF-TOKEN cookie. Required for login and logout too.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Answer'
+            examples:
+              normal:
+                value:
+                  expectedVersion: 3
+                  answer: Parts, labour and paint total MYR 5,000.
+  /api/staff/claims:
+    get:
+      operationId: staffQueue
+      summary: One team. Filter ALL, MINE or UNASSIGNED. Oldest submitted first, tie-break by id. ALL includes closed.
+      tags:
+      - OFFICER
+      x-allowed-roles:
+      - OFFICER
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffClaims'
+              examples:
+                empty:
+                  value: []
+                normal:
+                  value:
+                  - kind: MOTOR
+                    market: MY
+                    incidentOn: '2026-11-18'
+                    description: Rear bumper damaged in a collision.
+                    id: 00000000-0000-4000-8000-000000000101
+                    claimRef: CL-101
+                    currency: MYR
+                    status: SUBMITTED
+                    version: 1
+                    submittedAt: '2026-11-20T01:00:00Z'
+                    closedAt: null
+                    settlement: null
+                    requests: []
+                    timeline:
+                    - type: CLAIM_SUBMITTED
+                      at: '2026-11-20T01:00:00Z'
+                      message: Claim received.
+                      actorId: 00000000-0000-4000-8000-000000000001
+                      visibility: CLAIMANT_VISIBLE
+                    claimantId: 00000000-0000-4000-8000-000000000001
+                    officerId: null
+                    reserve: null
+        '401':
+          description: HTTP 401
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                UNAUTHENTICATED:
+                  value:
+                    code: UNAUTHENTICATED
+                    message: Sign in to continue.
+        '403':
+          description: HTTP 403
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                FORBIDDEN:
+                  value:
+                    code: FORBIDDEN
+                    message: Access denied.
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                INVALID_INPUT:
+                  value:
+                    code: INVALID_INPUT
+                    message: Check the submitted fields.
+      parameters:
+      - name: scope
+        in: query
+        schema:
+          type: string
+          enum:
+          - ALL
+          - MINE
+          - UNASSIGNED
+          default: ALL
+  /api/staff/claims/{id}:
+    get:
+      operationId: staffClaim
+      summary: Read staff detail including reserve and staff-only events.
+      tags:
+      - OFFICER
+      x-allowed-roles:
+      - OFFICER
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffClaim'
+              examples:
+                inReview:
+                  value:
+                    kind: MOTOR
+                    market: MY
+                    incidentOn: '2026-11-18'
+                    description: Rear bumper damaged in a collision.
+                    id: 00000000-0000-4000-8000-000000000101
+                    claimRef: CL-101
+                    currency: MYR
+                    status: UNDER_REVIEW
+                    version: 5
+                    submittedAt: '2026-11-20T01:00:00Z'
+                    closedAt: null
+                    settlement: null
+                    requests:
+                    - id: 00000000-0000-4000-8000-000000000201
+                      question: Workshop estimate for bumper repair?
+                      askedAt: '2026-11-20T01:12:00Z'
+                      answer: Parts, labour and paint total MYR 5,000.
+                      answeredAt: '2026-11-20T02:30:00Z'
+                    timeline:
+                    - type: CLAIM_SUBMITTED
+                      at: '2026-11-20T01:00:00Z'
+                      message: Claim received.
+                      actorId: 00000000-0000-4000-8000-000000000001
+                      visibility: CLAIMANT_VISIBLE
+                    - type: CLAIM_ASSIGNED
+                      at: '2026-11-20T01:05:00Z'
+                      message: An officer is reviewing your claim.
+                      actorId: 00000000-0000-4000-8000-000000000010
+                      visibility: CLAIMANT_VISIBLE
+                    - type: INFO_REQUESTED
+                      at: '2026-11-20T01:12:00Z'
+                      message: Workshop estimate for bumper repair?
+                      actorId: 00000000-0000-4000-8000-000000000010
+                      visibility: CLAIMANT_VISIBLE
+                    - type: INFO_PROVIDED
+                      at: '2026-11-20T02:30:00Z'
+                      message: Parts, labour and paint total MYR 5,000.
+                      actorId: 00000000-0000-4000-8000-000000000001
+                      visibility: CLAIMANT_VISIBLE
+                    - type: RESERVE_SET
+                      at: '2026-11-20T02:45:00Z'
+                      message: Reserve set to MYR 5,000.00.
+                      actorId: 00000000-0000-4000-8000-000000000010
+                      visibility: STAFF_ONLY
+                    claimantId: 00000000-0000-4000-8000-000000000001
+                    officerId: 00000000-0000-4000-8000-000000000010
+                    reserve: '5000.00'
+        '404':
+          description: HTTP 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                NOT_FOUND:
+                  value:
+                    code: NOT_FOUND
+                    message: Claim or request not found.
+        '401':
+          description: HTTP 401
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                UNAUTHENTICATED:
+                  value:
+                    code: UNAUTHENTICATED
+                    message: Sign in to continue.
+        '403':
+          description: HTTP 403
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                FORBIDDEN:
+                  value:
+                    code: FORBIDDEN
+                    message: Access denied.
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                INVALID_INPUT:
+                  value:
+                    code: INVALID_INPUT
+                    message: Check the submitted fields.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/staff/claims/{id}/assign:
+    post:
+      operationId: assignClaim
+      summary: Pick up an unassigned claim as the current officer.
+      tags:
+      - OFFICER
+      x-allowed-roles:
+      - OFFICER
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffClaim'
+              examples:
+                normal:
+                  value:
+                    kind: MOTOR
+                    market: MY
+                    incidentOn: '2026-11-18'
+                    description: Rear bumper damaged in a collision.
+                    id: 00000000-0000-4000-8000-000000000101
+                    claimRef: CL-101
+                    currency: MYR
+                    status: UNDER_REVIEW
+                    version: 2
+                    submittedAt: '2026-11-20T01:00:00Z'
+                    closedAt: null
+                    settlement: null
+                    requests: []
+                    timeline:
+                    - type: CLAIM_SUBMITTED
+                      at: '2026-11-20T01:00:00Z'
+                      message: Claim received.
+                      actorId: 00000000-0000-4000-8000-000000000001
+                      visibility: CLAIMANT_VISIBLE
+                    - type: CLAIM_ASSIGNED
+                      at: '2026-11-20T01:05:00Z'
+                      message: An officer is reviewing your claim.
+                      actorId: 00000000-0000-4000-8000-000000000010
+                      visibility: CLAIMANT_VISIBLE
+                    claimantId: 00000000-0000-4000-8000-000000000001
+                    officerId: 00000000-0000-4000-8000-000000000010
+                    reserve: null
+        '404':
+          description: HTTP 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                NOT_FOUND:
+                  value:
+                    code: NOT_FOUND
+                    message: Claim or request not found.
+        '409':
+          description: HTTP 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                VERSION_CONFLICT:
+                  value:
+                    code: VERSION_CONFLICT
+                    message: This claim was updated. Refresh to continue.
+                INVALID_STATE:
+                  value:
+                    code: INVALID_STATE
+                    message: This action is unavailable in the current state.
+        '401':
+          description: HTTP 401
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                UNAUTHENTICATED:
+                  value:
+                    code: UNAUTHENTICATED
+                    message: Sign in to continue.
+        '403':
+          description: HTTP 403
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                FORBIDDEN:
+                  value:
+                    code: FORBIDDEN
+                    message: Access denied.
+                CSRF_INVALID:
+                  value:
+                    code: CSRF_INVALID
+                    message: Refresh the CSRF token.
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                INVALID_INPUT:
+                  value:
+                    code: INVALID_INPUT
+                    message: Check the submitted fields.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-XSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Copy the current XSRF-TOKEN cookie. Required for login and logout too.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Version'
+            examples:
+              normal:
+                value:
+                  expectedVersion: 1
+  /api/staff/claims/{id}/requests:
+    post:
+      operationId: requestInfo
+      summary: Assigned officer asks one question.
+      tags:
+      - OFFICER
+      x-allowed-roles:
+      - OFFICER
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffClaim'
+              examples:
+                normal:
+                  value:
+                    kind: MOTOR
+                    market: MY
+                    incidentOn: '2026-11-18'
+                    description: Rear bumper damaged in a collision.
+                    id: 00000000-0000-4000-8000-000000000101
+                    claimRef: CL-101
+                    currency: MYR
+                    status: AWAITING_INFO
+                    version: 3
+                    submittedAt: '2026-11-20T01:00:00Z'
+                    closedAt: null
+                    settlement: null
+                    requests:
+                    - id: 00000000-0000-4000-8000-000000000201
+                      question: Workshop estimate for bumper repair?
+                      askedAt: '2026-11-20T01:12:00Z'
+                      answer: null
+                      answeredAt: null
+                    timeline:
+                    - type: CLAIM_SUBMITTED
+                      at: '2026-11-20T01:00:00Z'
+                      message: Claim received.
+                      actorId: 00000000-0000-4000-8000-000000000001
+                      visibility: CLAIMANT_VISIBLE
+                    - type: CLAIM_ASSIGNED
+                      at: '2026-11-20T01:05:00Z'
+                      message: An officer is reviewing your claim.
+                      actorId: 00000000-0000-4000-8000-000000000010
+                      visibility: CLAIMANT_VISIBLE
+                    - type: INFO_REQUESTED
+                      at: '2026-11-20T01:12:00Z'
+                      message: Workshop estimate for bumper repair?
+                      actorId: 00000000-0000-4000-8000-000000000010
+                      visibility: CLAIMANT_VISIBLE
+                    claimantId: 00000000-0000-4000-8000-000000000001
+                    officerId: 00000000-0000-4000-8000-000000000010
+                    reserve: null
+        '404':
+          description: HTTP 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                NOT_FOUND:
+                  value:
+                    code: NOT_FOUND
+                    message: Claim or request not found.
+        '409':
+          description: HTTP 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                VERSION_CONFLICT:
+                  value:
+                    code: VERSION_CONFLICT
+                    message: This claim was updated. Refresh to continue.
+                INVALID_STATE:
+                  value:
+                    code: INVALID_STATE
+                    message: This action is unavailable in the current state.
+        '401':
+          description: HTTP 401
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                UNAUTHENTICATED:
+                  value:
+                    code: UNAUTHENTICATED
+                    message: Sign in to continue.
+        '403':
+          description: HTTP 403
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                FORBIDDEN:
+                  value:
+                    code: FORBIDDEN
+                    message: Access denied.
+                CSRF_INVALID:
+                  value:
+                    code: CSRF_INVALID
+                    message: Refresh the CSRF token.
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                INVALID_INPUT:
+                  value:
+                    code: INVALID_INPUT
+                    message: Check the submitted fields.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-XSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Copy the current XSRF-TOKEN cookie. Required for login and logout too.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ask'
+            examples:
+              normal:
+                value:
+                  expectedVersion: 2
+                  question: Workshop estimate for bumper repair?
+  /api/staff/claims/{id}/reserve:
+    post:
+      operationId: setReserve
+      summary: Assigned officer sets an absolute outstanding estimate. Zero is valid.
+      tags:
+      - OFFICER
+      x-allowed-roles:
+      - OFFICER
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffClaim'
+              examples:
+                normal:
+                  value:
+                    kind: MOTOR
+                    market: MY
+                    incidentOn: '2026-11-18'
+                    description: Rear bumper damaged in a collision.
+                    id: 00000000-0000-4000-8000-000000000101
+                    claimRef: CL-101
+                    currency: MYR
+                    status: UNDER_REVIEW
+                    version: 5
+                    submittedAt: '2026-11-20T01:00:00Z'
+                    closedAt: null
+                    settlement: null
+                    requests:
+                    - id: 00000000-0000-4000-8000-000000000201
+                      question: Workshop estimate for bumper repair?
+                      askedAt: '2026-11-20T01:12:00Z'
+                      answer: Parts, labour and paint total MYR 5,000.
+                      answeredAt: '2026-11-20T02:30:00Z'
+                    timeline:
+                    - type: CLAIM_SUBMITTED
+                      at: '2026-11-20T01:00:00Z'
+                      message: Claim received.
+                      actorId: 00000000-0000-4000-8000-000000000001
+                      visibility: CLAIMANT_VISIBLE
+                    - type: CLAIM_ASSIGNED
+                      at: '2026-11-20T01:05:00Z'
+                      message: An officer is reviewing your claim.
+                      actorId: 00000000-0000-4000-8000-000000000010
+                      visibility: CLAIMANT_VISIBLE
+                    - type: INFO_REQUESTED
+                      at: '2026-11-20T01:12:00Z'
+                      message: Workshop estimate for bumper repair?
+                      actorId: 00000000-0000-4000-8000-000000000010
+                      visibility: CLAIMANT_VISIBLE
+                    - type: INFO_PROVIDED
+                      at: '2026-11-20T02:30:00Z'
+                      message: Parts, labour and paint total MYR 5,000.
+                      actorId: 00000000-0000-4000-8000-000000000001
+                      visibility: CLAIMANT_VISIBLE
+                    - type: RESERVE_SET
+                      at: '2026-11-20T02:45:00Z'
+                      message: Reserve set to MYR 5,000.00.
+                      actorId: 00000000-0000-4000-8000-000000000010
+                      visibility: STAFF_ONLY
+                    claimantId: 00000000-0000-4000-8000-000000000001
+                    officerId: 00000000-0000-4000-8000-000000000010
+                    reserve: '5000.00'
+        '404':
+          description: HTTP 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                NOT_FOUND:
+                  value:
+                    code: NOT_FOUND
+                    message: Claim or request not found.
+        '409':
+          description: HTTP 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                VERSION_CONFLICT:
+                  value:
+                    code: VERSION_CONFLICT
+                    message: This claim was updated. Refresh to continue.
+                INVALID_STATE:
+                  value:
+                    code: INVALID_STATE
+                    message: This action is unavailable in the current state.
+        '401':
+          description: HTTP 401
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                UNAUTHENTICATED:
+                  value:
+                    code: UNAUTHENTICATED
+                    message: Sign in to continue.
+        '403':
+          description: HTTP 403
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                FORBIDDEN:
+                  value:
+                    code: FORBIDDEN
+                    message: Access denied.
+                CSRF_INVALID:
+                  value:
+                    code: CSRF_INVALID
+                    message: Refresh the CSRF token.
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                INVALID_INPUT:
+                  value:
+                    code: INVALID_INPUT
+                    message: Check the submitted fields.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-XSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Copy the current XSRF-TOKEN cookie. Required for login and logout too.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetReserve'
+            examples:
+              normal:
+                value:
+                  expectedVersion: 4
+                  amount: '5000.00'
+  /api/staff/claims/{id}/settle:
+    post:
+      operationId: settleClaim
+      summary: Assigned officer records a positive final settlement and closes the claim.
+      tags:
+      - OFFICER
+      x-allowed-roles:
+      - OFFICER
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffClaim'
+              examples:
+                normal:
+                  value:
+                    kind: MOTOR
+                    market: MY
+                    incidentOn: '2026-11-18'
+                    description: Rear bumper damaged in a collision.
+                    id: 00000000-0000-4000-8000-000000000101
+                    claimRef: CL-101
+                    currency: MYR
+                    status: SETTLED
+                    version: 6
+                    submittedAt: '2026-11-20T01:00:00Z'
+                    closedAt: '2026-11-20T03:00:00Z'
+                    settlement: '4200.00'
+                    requests:
+                    - id: 00000000-0000-4000-8000-000000000201
+                      question: Workshop estimate for bumper repair?
+                      askedAt: '2026-11-20T01:12:00Z'
+                      answer: Parts, labour and paint total MYR 5,000.
+                      answeredAt: '2026-11-20T02:30:00Z'
+                    timeline:
+                    - type: CLAIM_SUBMITTED
+                      at: '2026-11-20T01:00:00Z'
+                      message: Claim received.
+                      actorId: 00000000-0000-4000-8000-000000000001
+                      visibility: CLAIMANT_VISIBLE
+                    - type: CLAIM_ASSIGNED
+                      at: '2026-11-20T01:05:00Z'
+                      message: An officer is reviewing your claim.
+                      actorId: 00000000-0000-4000-8000-000000000010
+                      visibility: CLAIMANT_VISIBLE
+                    - type: INFO_REQUESTED
+                      at: '2026-11-20T01:12:00Z'
+                      message: Workshop estimate for bumper repair?
+                      actorId: 00000000-0000-4000-8000-000000000010
+                      visibility: CLAIMANT_VISIBLE
+                    - type: INFO_PROVIDED
+                      at: '2026-11-20T02:30:00Z'
+                      message: Parts, labour and paint total MYR 5,000.
+                      actorId: 00000000-0000-4000-8000-000000000001
+                      visibility: CLAIMANT_VISIBLE
+                    - type: RESERVE_SET
+                      at: '2026-11-20T02:45:00Z'
+                      message: Reserve set to MYR 5,000.00.
+                      actorId: 00000000-0000-4000-8000-000000000010
+                      visibility: STAFF_ONLY
+                    - type: CLAIM_SETTLED
+                      at: '2026-11-20T03:00:00Z'
+                      message: Settled for MYR 4,200.00.
+                      actorId: 00000000-0000-4000-8000-000000000010
+                      visibility: CLAIMANT_VISIBLE
+                    claimantId: 00000000-0000-4000-8000-000000000001
+                    officerId: 00000000-0000-4000-8000-000000000010
+                    reserve: '0.00'
+        '404':
+          description: HTTP 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                NOT_FOUND:
+                  value:
+                    code: NOT_FOUND
+                    message: Claim or request not found.
+        '409':
+          description: HTTP 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                VERSION_CONFLICT:
+                  value:
+                    code: VERSION_CONFLICT
+                    message: This claim was updated. Refresh to continue.
+                INVALID_STATE:
+                  value:
+                    code: INVALID_STATE
+                    message: This action is unavailable in the current state.
+        '401':
+          description: HTTP 401
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                UNAUTHENTICATED:
+                  value:
+                    code: UNAUTHENTICATED
+                    message: Sign in to continue.
+        '403':
+          description: HTTP 403
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                FORBIDDEN:
+                  value:
+                    code: FORBIDDEN
+                    message: Access denied.
+                CSRF_INVALID:
+                  value:
+                    code: CSRF_INVALID
+                    message: Refresh the CSRF token.
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                INVALID_INPUT:
+                  value:
+                    code: INVALID_INPUT
+                    message: Check the submitted fields.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-XSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Copy the current XSRF-TOKEN cookie. Required for login and logout too.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Settle'
+            examples:
+              normal:
+                value:
+                  expectedVersion: 5
+                  amount: '4200.00'
+  /api/staff/claims/{id}/reject:
+    post:
+      operationId: rejectClaim
+      summary: Assigned officer rejects with a claimant-visible reason.
+      tags:
+      - OFFICER
+      x-allowed-roles:
+      - OFFICER
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffClaim'
+              examples:
+                normal:
+                  value:
+                    kind: MOTOR
+                    market: MY
+                    incidentOn: '2026-11-18'
+                    description: Rear bumper damaged in a collision.
+                    id: 00000000-0000-4000-8000-000000000101
+                    claimRef: CL-101
+                    currency: MYR
+                    status: REJECTED
+                    version: 3
+                    submittedAt: '2026-11-20T01:00:00Z'
+                    closedAt: '2026-11-20T01:12:00Z'
+                    settlement: null
+                    requests: []
+                    timeline:
+                    - type: CLAIM_SUBMITTED
+                      at: '2026-11-20T01:00:00Z'
+                      message: Claim received.
+                      actorId: 00000000-0000-4000-8000-000000000001
+                      visibility: CLAIMANT_VISIBLE
+                    - type: CLAIM_ASSIGNED
+                      at: '2026-11-20T01:05:00Z'
+                      message: An officer is reviewing your claim.
+                      actorId: 00000000-0000-4000-8000-000000000010
+                      visibility: CLAIMANT_VISIBLE
+                    - type: CLAIM_REJECTED
+                      at: '2026-11-20T01:12:00Z'
+                      message: Duplicate incident confirmed by claimant.
+                      actorId: 00000000-0000-4000-8000-000000000010
+                      visibility: CLAIMANT_VISIBLE
+                    claimantId: 00000000-0000-4000-8000-000000000001
+                    officerId: 00000000-0000-4000-8000-000000000010
+                    reserve: null
+        '404':
+          description: HTTP 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                NOT_FOUND:
+                  value:
+                    code: NOT_FOUND
+                    message: Claim or request not found.
+        '409':
+          description: HTTP 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                VERSION_CONFLICT:
+                  value:
+                    code: VERSION_CONFLICT
+                    message: This claim was updated. Refresh to continue.
+                INVALID_STATE:
+                  value:
+                    code: INVALID_STATE
+                    message: This action is unavailable in the current state.
+        '401':
+          description: HTTP 401
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                UNAUTHENTICATED:
+                  value:
+                    code: UNAUTHENTICATED
+                    message: Sign in to continue.
+        '403':
+          description: HTTP 403
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                FORBIDDEN:
+                  value:
+                    code: FORBIDDEN
+                    message: Access denied.
+                CSRF_INVALID:
+                  value:
+                    code: CSRF_INVALID
+                    message: Refresh the CSRF token.
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                INVALID_INPUT:
+                  value:
+                    code: INVALID_INPUT
+                    message: Check the submitted fields.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-XSRF-TOKEN
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Copy the current XSRF-TOKEN cookie. Required for login and logout too.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Reject'
+            examples:
+              normal:
+                value:
+                  expectedVersion: 2
+                  reason: Duplicate incident confirmed by claimant.
+  /api/staff/reports/workload:
+    get:
+      operationId: workload
+      summary: Live from claim. Open by assigned officer, including officers with zero cases. Closed count uses a rolling
+        7-day interval.
+      tags:
+      - OFFICER
+      x-allowed-roles:
+      - OFFICER
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workload'
+              examples:
+                normal:
+                  value:
+                    unassigned: 0
+                    awaitingInfo: 0
+                    openByOfficer:
+                    - officerId: 00000000-0000-4000-8000-000000000010
+                      displayName: Farah
+                      count: 1
+                    - officerId: 00000000-0000-4000-8000-000000000011
+                      displayName: Arjun
+                      count: 0
+                    closedLast7Days: 0
+        '401':
+          description: HTTP 401
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                UNAUTHENTICATED:
+                  value:
+                    code: UNAUTHENTICATED
+                    message: Sign in to continue.
+        '403':
+          description: HTTP 403
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                FORBIDDEN:
+                  value:
+                    code: FORBIDDEN
+                    message: Access denied.
+  /api/staff/reports/exposure:
+    get:
+      operationId: exposure
+      summary: Latest applied snapshots. Only currencies with open claims. Sum known reserves and count unassessed separately.
+      tags:
+      - OFFICER
+      x-allowed-roles:
+      - OFFICER
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exposure'
+              examples:
+                empty:
+                  value:
+                    lastAppliedAt: null
+                    byCurrency: []
+                normal:
+                  value:
+                    lastAppliedAt: '2026-11-20T02:45:00Z'
+                    byCurrency:
+                    - currency: MYR
+                      openClaims: 1
+                      awaitingEstimate: 0
+                      knownOutstanding: '5000.00'
+        '401':
+          description: HTTP 401
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                UNAUTHENTICATED:
+                  value:
+                    code: UNAUTHENTICATED
+                    message: Sign in to continue.
+        '403':
+          description: HTTP 403
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                FORBIDDEN:
+                  value:
+                    code: FORBIDDEN
+                    message: Access denied.
+components:
+  schemas:
+    User:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - displayName
+      - role
+      properties:
+        id:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 120
+          pattern: \S
+        role:
+          type: string
+          enum:
+          - CLAIMANT
+          - OFFICER
+    Submit:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - market
+      - incidentOn
+      - description
+      properties:
+        kind:
+          type: string
+          enum:
+          - MOTOR
+          - PROPERTY
+        market:
+          type: string
+          enum:
+          - MY
+          - SG
+          - TH
+          - ID
+          - PH
+          - HK
+        incidentOn:
+          type: string
+          format: date
+        description:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: \S
+    Login:
+      type: object
+      additionalProperties: false
+      required:
+      - username
+      - password
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 120
+          pattern: \S
+        password:
+          type: string
+          minLength: 1
+          maxLength: 256
+          pattern: \S
+    Version:
+      type: object
+      additionalProperties: false
+      required:
+      - expectedVersion
+      properties:
+        expectedVersion:
+          type: integer
+          minimum: 1
+    Ask:
+      type: object
+      additionalProperties: false
+      required:
+      - expectedVersion
+      - question
+      properties:
+        expectedVersion:
+          type: integer
+          minimum: 1
+        question:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: \S
+    Answer:
+      type: object
+      additionalProperties: false
+      required:
+      - expectedVersion
+      - answer
+      properties:
+        expectedVersion:
+          type: integer
+          minimum: 1
+        answer:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: \S
+    Reject:
+      type: object
+      additionalProperties: false
+      required:
+      - expectedVersion
+      - reason
+      properties:
+        expectedVersion:
+          type: integer
+          minimum: 1
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: \S
+    SetReserve:
+      type: object
+      additionalProperties: false
+      required:
+      - expectedVersion
+      - amount
+      properties:
+        expectedVersion:
+          type: integer
+          minimum: 1
+        amount:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+          description: Decimal string, exactly two fractional digits.
+    Settle:
+      type: object
+      additionalProperties: false
+      required:
+      - expectedVersion
+      - amount
+      properties:
+        expectedVersion:
+          type: integer
+          minimum: 1
+        amount:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+          description: Decimal string, exactly two fractional digits.
+          not:
+            const: '0.00'
+    Info:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - question
+      - askedAt
+      - answer
+      - answeredAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        question:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: \S
+        askedAt:
+          type: string
+          format: date-time
+        answer:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 2000
+            pattern: \S
+          - type: 'null'
+        answeredAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+    Event:
+      type: object
+      additionalProperties: false
+      required:
+      - type
+      - at
+      - message
+      properties:
+        type:
+          type: string
+          enum:
+          - CLAIM_SUBMITTED
+          - CLAIM_ASSIGNED
+          - INFO_REQUESTED
+          - INFO_PROVIDED
+          - CLAIM_SETTLED
+          - CLAIM_REJECTED
+        at:
+          type: string
+          format: date-time
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: \S
+    StaffEvent:
+      type: object
+      additionalProperties: false
+      required:
+      - type
+      - at
+      - message
+      - actorId
+      - visibility
+      properties:
+        type:
+          type: string
+          enum:
+          - CLAIM_SUBMITTED
+          - CLAIM_ASSIGNED
+          - INFO_REQUESTED
+          - INFO_PROVIDED
+          - RESERVE_SET
+          - CLAIM_SETTLED
+          - CLAIM_REJECTED
+        at:
+          type: string
+          format: date-time
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: \S
+        actorId:
+          type: string
+          format: uuid
+        visibility:
+          type: string
+          enum:
+          - CLAIMANT_VISIBLE
+          - STAFF_ONLY
+    Claim:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - claimRef
+      - kind
+      - market
+      - currency
+      - incidentOn
+      - description
+      - status
+      - version
+      - submittedAt
+      - closedAt
+      - settlement
+      - requests
+      - timeline
+      properties:
+        id:
+          type: string
+          format: uuid
+        claimRef:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: \S
+        kind:
+          type: string
+          enum:
+          - MOTOR
+          - PROPERTY
+        market:
+          type: string
+          enum:
+          - MY
+          - SG
+          - TH
+          - ID
+          - PH
+          - HK
+        currency:
+          type: string
+          enum:
+          - MYR
+          - SGD
+          - THB
+          - IDR
+          - PHP
+          - HKD
+        incidentOn:
+          type: string
+          format: date
+        description:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: \S
+        status:
+          type: string
+          enum:
+          - SUBMITTED
+          - UNDER_REVIEW
+          - AWAITING_INFO
+          - SETTLED
+          - REJECTED
+        version:
+          type: integer
+          minimum: 1
+        submittedAt:
+          type: string
+          format: date-time
+        closedAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        settlement:
+          anyOf:
+          - type: string
+            pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+            description: Decimal string, exactly two fractional digits.
+          - type: 'null'
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/Info'
+        timeline:
+          type: array
+          items:
+            $ref: '#/components/schemas/Event'
+    StaffClaim:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - claimRef
+      - kind
+      - market
+      - currency
+      - incidentOn
+      - description
+      - status
+      - version
+      - submittedAt
+      - closedAt
+      - settlement
+      - claimantId
+      - officerId
+      - reserve
+      - requests
+      - timeline
+      properties:
+        id:
+          type: string
+          format: uuid
+        claimRef:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: \S
+        kind:
+          type: string
+          enum:
+          - MOTOR
+          - PROPERTY
+        market:
+          type: string
+          enum:
+          - MY
+          - SG
+          - TH
+          - ID
+          - PH
+          - HK
+        currency:
+          type: string
+          enum:
+          - MYR
+          - SGD
+          - THB
+          - IDR
+          - PHP
+          - HKD
+        incidentOn:
+          type: string
+          format: date
+        description:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: \S
+        status:
+          type: string
+          enum:
+          - SUBMITTED
+          - UNDER_REVIEW
+          - AWAITING_INFO
+          - SETTLED
+          - REJECTED
+        version:
+          type: integer
+          minimum: 1
+        submittedAt:
+          type: string
+          format: date-time
+        closedAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        settlement:
+          anyOf:
+          - type: string
+            pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+            description: Decimal string, exactly two fractional digits.
+          - type: 'null'
+        claimantId:
+          type: string
+          format: uuid
+        officerId:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        reserve:
+          anyOf:
+          - type: string
+            pattern: ^(0|[1-9][0-9]{0,15})\.[0-9]{2}$
+            description: Decimal string, exactly two fractional digits.
+          - type: 'null'
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/Info'
+        timeline:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffEvent'
+    Claims:
+      type: array
+      items:
+        $ref: '#/components/schemas/Claim'
+    StaffClaims:
+      type: array
+      items:
+        $ref: '#/components/schemas/StaffClaim'
+    Workload:
+      type: object
+      additionalProperties: false
+      required:
+      - unassigned
+      - awaitingInfo
+      - openByOfficer
+      - closedLast7Days
+      properties:
+        unassigned:
+          type: integer
+          minimum: 0
+        awaitingInfo:
+          type: integer
+          minimum: 0
+        openByOfficer:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - officerId
+            - displayName
+            - count
+            properties:
+              officerId:
+                type: string
+                format: uuid
+              displayName:
+                type: string
+                minLength: 1
+                maxLength: 120
+                pattern: \S
+              count:
+                type: integer
+                minimum: 0
+        closedLast7Days:
+          type: integer
+          minimum: 0
+    Exposure:
+      type: object
+      additionalProperties: false
+      required:
+      - lastAppliedAt
+      - byCurrency
+      properties:
+        lastAppliedAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        byCurrency:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - currency
+            - openClaims
+            - awaitingEstimate
+            - knownOutstanding
+            properties:
+              currency:
+                type: string
+                enum:
+                - MYR
+                - SGD
+                - THB
+                - IDR
+                - PHP
+                - HKD
+              openClaims:
+                type: integer
+                minimum: 0
+              awaitingEstimate:
+                type: integer
+                minimum: 0
+              knownOutstanding:
+                type: string
+                pattern: ^(0|[1-9][0-9]*)\.[0-9]{2}$
+    Error:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: string
+          enum:
+          - INVALID_INPUT
+          - BAD_CREDENTIALS
+          - UNAUTHENTICATED
+          - FORBIDDEN
+          - CSRF_INVALID
+          - NOT_FOUND
+          - VERSION_CONFLICT
+          - INVALID_STATE
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: \S
+    Health:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - UP
+          - DOWN
+          - OUT_OF_SERVICE
+          - UNKNOWN
+  securitySchemes:
+    session:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID

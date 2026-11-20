@@ -1,0 +1,708 @@
+{
+  "health": {
+    "healthy": {
+      "status": "UP"
+    }
+  },
+  "me": {
+    "claimant": {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "displayName": "Aina",
+      "role": "CLAIMANT"
+    },
+    "officer": {
+      "id": "00000000-0000-4000-8000-000000000010",
+      "displayName": "Farah",
+      "role": "OFFICER"
+    }
+  },
+  "submitClaim": {
+    "submitted": {
+      "kind": "MOTOR",
+      "market": "MY",
+      "incidentOn": "2026-11-18",
+      "description": "Rear bumper damaged in a collision.",
+      "id": "00000000-0000-4000-8000-000000000101",
+      "claimRef": "CL-101",
+      "currency": "MYR",
+      "status": "SUBMITTED",
+      "version": 1,
+      "submittedAt": "2026-11-20T01:00:00Z",
+      "closedAt": null,
+      "settlement": null,
+      "requests": [],
+      "timeline": [
+        {
+          "type": "CLAIM_SUBMITTED",
+          "at": "2026-11-20T01:00:00Z",
+          "message": "Claim received."
+        }
+      ]
+    }
+  },
+  "myClaims": {
+    "empty": [],
+    "normal": [
+      {
+        "kind": "MOTOR",
+        "market": "MY",
+        "incidentOn": "2026-11-18",
+        "description": "Rear bumper damaged in a collision.",
+        "id": "00000000-0000-4000-8000-000000000101",
+        "claimRef": "CL-101",
+        "currency": "MYR",
+        "status": "SUBMITTED",
+        "version": 1,
+        "submittedAt": "2026-11-20T01:00:00Z",
+        "closedAt": null,
+        "settlement": null,
+        "requests": [],
+        "timeline": [
+          {
+            "type": "CLAIM_SUBMITTED",
+            "at": "2026-11-20T01:00:00Z",
+            "message": "Claim received."
+          }
+        ]
+      }
+    ]
+  },
+  "myClaim": {
+    "submitted": {
+      "kind": "MOTOR",
+      "market": "MY",
+      "incidentOn": "2026-11-18",
+      "description": "Rear bumper damaged in a collision.",
+      "id": "00000000-0000-4000-8000-000000000101",
+      "claimRef": "CL-101",
+      "currency": "MYR",
+      "status": "SUBMITTED",
+      "version": 1,
+      "submittedAt": "2026-11-20T01:00:00Z",
+      "closedAt": null,
+      "settlement": null,
+      "requests": [],
+      "timeline": [
+        {
+          "type": "CLAIM_SUBMITTED",
+          "at": "2026-11-20T01:00:00Z",
+          "message": "Claim received."
+        }
+      ]
+    },
+    "awaitingInfo": {
+      "kind": "MOTOR",
+      "market": "MY",
+      "incidentOn": "2026-11-18",
+      "description": "Rear bumper damaged in a collision.",
+      "id": "00000000-0000-4000-8000-000000000101",
+      "claimRef": "CL-101",
+      "currency": "MYR",
+      "status": "AWAITING_INFO",
+      "version": 3,
+      "submittedAt": "2026-11-20T01:00:00Z",
+      "closedAt": null,
+      "settlement": null,
+      "requests": [
+        {
+          "id": "00000000-0000-4000-8000-000000000201",
+          "question": "Workshop estimate for bumper repair?",
+          "askedAt": "2026-11-20T01:12:00Z",
+          "answer": null,
+          "answeredAt": null
+        }
+      ],
+      "timeline": [
+        {
+          "type": "CLAIM_SUBMITTED",
+          "at": "2026-11-20T01:00:00Z",
+          "message": "Claim received."
+        },
+        {
+          "type": "CLAIM_ASSIGNED",
+          "at": "2026-11-20T01:05:00Z",
+          "message": "An officer is reviewing your claim."
+        },
+        {
+          "type": "INFO_REQUESTED",
+          "at": "2026-11-20T01:12:00Z",
+          "message": "Workshop estimate for bumper repair?"
+        }
+      ]
+    },
+    "answered": {
+      "kind": "MOTOR",
+      "market": "MY",
+      "incidentOn": "2026-11-18",
+      "description": "Rear bumper damaged in a collision.",
+      "id": "00000000-0000-4000-8000-000000000101",
+      "claimRef": "CL-101",
+      "currency": "MYR",
+      "status": "UNDER_REVIEW",
+      "version": 4,
+      "submittedAt": "2026-11-20T01:00:00Z",
+      "closedAt": null,
+      "settlement": null,
+      "requests": [
+        {
+          "id": "00000000-0000-4000-8000-000000000201",
+          "question": "Workshop estimate for bumper repair?",
+          "askedAt": "2026-11-20T01:12:00Z",
+          "answer": "Parts, labour and paint total MYR 5,000.",
+          "answeredAt": "2026-11-20T02:30:00Z"
+        }
+      ],
+      "timeline": [
+        {
+          "type": "CLAIM_SUBMITTED",
+          "at": "2026-11-20T01:00:00Z",
+          "message": "Claim received."
+        },
+        {
+          "type": "CLAIM_ASSIGNED",
+          "at": "2026-11-20T01:05:00Z",
+          "message": "An officer is reviewing your claim."
+        },
+        {
+          "type": "INFO_REQUESTED",
+          "at": "2026-11-20T01:12:00Z",
+          "message": "Workshop estimate for bumper repair?"
+        },
+        {
+          "type": "INFO_PROVIDED",
+          "at": "2026-11-20T02:30:00Z",
+          "message": "Parts, labour and paint total MYR 5,000."
+        }
+      ]
+    },
+    "settled": {
+      "kind": "MOTOR",
+      "market": "MY",
+      "incidentOn": "2026-11-18",
+      "description": "Rear bumper damaged in a collision.",
+      "id": "00000000-0000-4000-8000-000000000101",
+      "claimRef": "CL-101",
+      "currency": "MYR",
+      "status": "SETTLED",
+      "version": 6,
+      "submittedAt": "2026-11-20T01:00:00Z",
+      "closedAt": "2026-11-20T03:00:00Z",
+      "settlement": "4200.00",
+      "requests": [
+        {
+          "id": "00000000-0000-4000-8000-000000000201",
+          "question": "Workshop estimate for bumper repair?",
+          "askedAt": "2026-11-20T01:12:00Z",
+          "answer": "Parts, labour and paint total MYR 5,000.",
+          "answeredAt": "2026-11-20T02:30:00Z"
+        }
+      ],
+      "timeline": [
+        {
+          "type": "CLAIM_SUBMITTED",
+          "at": "2026-11-20T01:00:00Z",
+          "message": "Claim received."
+        },
+        {
+          "type": "CLAIM_ASSIGNED",
+          "at": "2026-11-20T01:05:00Z",
+          "message": "An officer is reviewing your claim."
+        },
+        {
+          "type": "INFO_REQUESTED",
+          "at": "2026-11-20T01:12:00Z",
+          "message": "Workshop estimate for bumper repair?"
+        },
+        {
+          "type": "INFO_PROVIDED",
+          "at": "2026-11-20T02:30:00Z",
+          "message": "Parts, labour and paint total MYR 5,000."
+        },
+        {
+          "type": "CLAIM_SETTLED",
+          "at": "2026-11-20T03:00:00Z",
+          "message": "Settled for MYR 4,200.00."
+        }
+      ]
+    },
+    "rejected": {
+      "kind": "MOTOR",
+      "market": "MY",
+      "incidentOn": "2026-11-18",
+      "description": "Rear bumper damaged in a collision.",
+      "id": "00000000-0000-4000-8000-000000000101",
+      "claimRef": "CL-101",
+      "currency": "MYR",
+      "status": "REJECTED",
+      "version": 3,
+      "submittedAt": "2026-11-20T01:00:00Z",
+      "closedAt": "2026-11-20T01:12:00Z",
+      "settlement": null,
+      "requests": [],
+      "timeline": [
+        {
+          "type": "CLAIM_SUBMITTED",
+          "at": "2026-11-20T01:00:00Z",
+          "message": "Claim received."
+        },
+        {
+          "type": "CLAIM_ASSIGNED",
+          "at": "2026-11-20T01:05:00Z",
+          "message": "An officer is reviewing your claim."
+        },
+        {
+          "type": "CLAIM_REJECTED",
+          "at": "2026-11-20T01:12:00Z",
+          "message": "Duplicate incident confirmed by claimant."
+        }
+      ]
+    }
+  },
+  "answerRequest": {
+    "answered": {
+      "kind": "MOTOR",
+      "market": "MY",
+      "incidentOn": "2026-11-18",
+      "description": "Rear bumper damaged in a collision.",
+      "id": "00000000-0000-4000-8000-000000000101",
+      "claimRef": "CL-101",
+      "currency": "MYR",
+      "status": "UNDER_REVIEW",
+      "version": 4,
+      "submittedAt": "2026-11-20T01:00:00Z",
+      "closedAt": null,
+      "settlement": null,
+      "requests": [
+        {
+          "id": "00000000-0000-4000-8000-000000000201",
+          "question": "Workshop estimate for bumper repair?",
+          "askedAt": "2026-11-20T01:12:00Z",
+          "answer": "Parts, labour and paint total MYR 5,000.",
+          "answeredAt": "2026-11-20T02:30:00Z"
+        }
+      ],
+      "timeline": [
+        {
+          "type": "CLAIM_SUBMITTED",
+          "at": "2026-11-20T01:00:00Z",
+          "message": "Claim received."
+        },
+        {
+          "type": "CLAIM_ASSIGNED",
+          "at": "2026-11-20T01:05:00Z",
+          "message": "An officer is reviewing your claim."
+        },
+        {
+          "type": "INFO_REQUESTED",
+          "at": "2026-11-20T01:12:00Z",
+          "message": "Workshop estimate for bumper repair?"
+        },
+        {
+          "type": "INFO_PROVIDED",
+          "at": "2026-11-20T02:30:00Z",
+          "message": "Parts, labour and paint total MYR 5,000."
+        }
+      ]
+    }
+  },
+  "staffQueue": {
+    "empty": [],
+    "normal": [
+      {
+        "kind": "MOTOR",
+        "market": "MY",
+        "incidentOn": "2026-11-18",
+        "description": "Rear bumper damaged in a collision.",
+        "id": "00000000-0000-4000-8000-000000000101",
+        "claimRef": "CL-101",
+        "currency": "MYR",
+        "status": "SUBMITTED",
+        "version": 1,
+        "submittedAt": "2026-11-20T01:00:00Z",
+        "closedAt": null,
+        "settlement": null,
+        "requests": [],
+        "timeline": [
+          {
+            "type": "CLAIM_SUBMITTED",
+            "at": "2026-11-20T01:00:00Z",
+            "message": "Claim received.",
+            "actorId": "00000000-0000-4000-8000-000000000001",
+            "visibility": "CLAIMANT_VISIBLE"
+          }
+        ],
+        "claimantId": "00000000-0000-4000-8000-000000000001",
+        "officerId": null,
+        "reserve": null
+      }
+    ]
+  },
+  "staffClaim": {
+    "inReview": {
+      "kind": "MOTOR",
+      "market": "MY",
+      "incidentOn": "2026-11-18",
+      "description": "Rear bumper damaged in a collision.",
+      "id": "00000000-0000-4000-8000-000000000101",
+      "claimRef": "CL-101",
+      "currency": "MYR",
+      "status": "UNDER_REVIEW",
+      "version": 5,
+      "submittedAt": "2026-11-20T01:00:00Z",
+      "closedAt": null,
+      "settlement": null,
+      "requests": [
+        {
+          "id": "00000000-0000-4000-8000-000000000201",
+          "question": "Workshop estimate for bumper repair?",
+          "askedAt": "2026-11-20T01:12:00Z",
+          "answer": "Parts, labour and paint total MYR 5,000.",
+          "answeredAt": "2026-11-20T02:30:00Z"
+        }
+      ],
+      "timeline": [
+        {
+          "type": "CLAIM_SUBMITTED",
+          "at": "2026-11-20T01:00:00Z",
+          "message": "Claim received.",
+          "actorId": "00000000-0000-4000-8000-000000000001",
+          "visibility": "CLAIMANT_VISIBLE"
+        },
+        {
+          "type": "CLAIM_ASSIGNED",
+          "at": "2026-11-20T01:05:00Z",
+          "message": "An officer is reviewing your claim.",
+          "actorId": "00000000-0000-4000-8000-000000000010",
+          "visibility": "CLAIMANT_VISIBLE"
+        },
+        {
+          "type": "INFO_REQUESTED",
+          "at": "2026-11-20T01:12:00Z",
+          "message": "Workshop estimate for bumper repair?",
+          "actorId": "00000000-0000-4000-8000-000000000010",
+          "visibility": "CLAIMANT_VISIBLE"
+        },
+        {
+          "type": "INFO_PROVIDED",
+          "at": "2026-11-20T02:30:00Z",
+          "message": "Parts, labour and paint total MYR 5,000.",
+          "actorId": "00000000-0000-4000-8000-000000000001",
+          "visibility": "CLAIMANT_VISIBLE"
+        },
+        {
+          "type": "RESERVE_SET",
+          "at": "2026-11-20T02:45:00Z",
+          "message": "Reserve set to MYR 5,000.00.",
+          "actorId": "00000000-0000-4000-8000-000000000010",
+          "visibility": "STAFF_ONLY"
+        }
+      ],
+      "claimantId": "00000000-0000-4000-8000-000000000001",
+      "officerId": "00000000-0000-4000-8000-000000000010",
+      "reserve": "5000.00"
+    }
+  },
+  "assignClaim": {
+    "normal": {
+      "kind": "MOTOR",
+      "market": "MY",
+      "incidentOn": "2026-11-18",
+      "description": "Rear bumper damaged in a collision.",
+      "id": "00000000-0000-4000-8000-000000000101",
+      "claimRef": "CL-101",
+      "currency": "MYR",
+      "status": "UNDER_REVIEW",
+      "version": 2,
+      "submittedAt": "2026-11-20T01:00:00Z",
+      "closedAt": null,
+      "settlement": null,
+      "requests": [],
+      "timeline": [
+        {
+          "type": "CLAIM_SUBMITTED",
+          "at": "2026-11-20T01:00:00Z",
+          "message": "Claim received.",
+          "actorId": "00000000-0000-4000-8000-000000000001",
+          "visibility": "CLAIMANT_VISIBLE"
+        },
+        {
+          "type": "CLAIM_ASSIGNED",
+          "at": "2026-11-20T01:05:00Z",
+          "message": "An officer is reviewing your claim.",
+          "actorId": "00000000-0000-4000-8000-000000000010",
+          "visibility": "CLAIMANT_VISIBLE"
+        }
+      ],
+      "claimantId": "00000000-0000-4000-8000-000000000001",
+      "officerId": "00000000-0000-4000-8000-000000000010",
+      "reserve": null
+    }
+  },
+  "requestInfo": {
+    "normal": {
+      "kind": "MOTOR",
+      "market": "MY",
+      "incidentOn": "2026-11-18",
+      "description": "Rear bumper damaged in a collision.",
+      "id": "00000000-0000-4000-8000-000000000101",
+      "claimRef": "CL-101",
+      "currency": "MYR",
+      "status": "AWAITING_INFO",
+      "version": 3,
+      "submittedAt": "2026-11-20T01:00:00Z",
+      "closedAt": null,
+      "settlement": null,
+      "requests": [
+        {
+          "id": "00000000-0000-4000-8000-000000000201",
+          "question": "Workshop estimate for bumper repair?",
+          "askedAt": "2026-11-20T01:12:00Z",
+          "answer": null,
+          "answeredAt": null
+        }
+      ],
+      "timeline": [
+        {
+          "type": "CLAIM_SUBMITTED",
+          "at": "2026-11-20T01:00:00Z",
+          "message": "Claim received.",
+          "actorId": "00000000-0000-4000-8000-000000000001",
+          "visibility": "CLAIMANT_VISIBLE"
+        },
+        {
+          "type": "CLAIM_ASSIGNED",
+          "at": "2026-11-20T01:05:00Z",
+          "message": "An officer is reviewing your claim.",
+          "actorId": "00000000-0000-4000-8000-000000000010",
+          "visibility": "CLAIMANT_VISIBLE"
+        },
+        {
+          "type": "INFO_REQUESTED",
+          "at": "2026-11-20T01:12:00Z",
+          "message": "Workshop estimate for bumper repair?",
+          "actorId": "00000000-0000-4000-8000-000000000010",
+          "visibility": "CLAIMANT_VISIBLE"
+        }
+      ],
+      "claimantId": "00000000-0000-4000-8000-000000000001",
+      "officerId": "00000000-0000-4000-8000-000000000010",
+      "reserve": null
+    }
+  },
+  "setReserve": {
+    "normal": {
+      "kind": "MOTOR",
+      "market": "MY",
+      "incidentOn": "2026-11-18",
+      "description": "Rear bumper damaged in a collision.",
+      "id": "00000000-0000-4000-8000-000000000101",
+      "claimRef": "CL-101",
+      "currency": "MYR",
+      "status": "UNDER_REVIEW",
+      "version": 5,
+      "submittedAt": "2026-11-20T01:00:00Z",
+      "closedAt": null,
+      "settlement": null,
+      "requests": [
+        {
+          "id": "00000000-0000-4000-8000-000000000201",
+          "question": "Workshop estimate for bumper repair?",
+          "askedAt": "2026-11-20T01:12:00Z",
+          "answer": "Parts, labour and paint total MYR 5,000.",
+          "answeredAt": "2026-11-20T02:30:00Z"
+        }
+      ],
+      "timeline": [
+        {
+          "type": "CLAIM_SUBMITTED",
+          "at": "2026-11-20T01:00:00Z",
+          "message": "Claim received.",
+          "actorId": "00000000-0000-4000-8000-000000000001",
+          "visibility": "CLAIMANT_VISIBLE"
+        },
+        {
+          "type": "CLAIM_ASSIGNED",
+          "at": "2026-11-20T01:05:00Z",
+          "message": "An officer is reviewing your claim.",
+          "actorId": "00000000-0000-4000-8000-000000000010",
+          "visibility": "CLAIMANT_VISIBLE"
+        },
+        {
+          "type": "INFO_REQUESTED",
+          "at": "2026-11-20T01:12:00Z",
+          "message": "Workshop estimate for bumper repair?",
+          "actorId": "00000000-0000-4000-8000-000000000010",
+          "visibility": "CLAIMANT_VISIBLE"
+        },
+        {
+          "type": "INFO_PROVIDED",
+          "at": "2026-11-20T02:30:00Z",
+          "message": "Parts, labour and paint total MYR 5,000.",
+          "actorId": "00000000-0000-4000-8000-000000000001",
+          "visibility": "CLAIMANT_VISIBLE"
+        },
+        {
+          "type": "RESERVE_SET",
+          "at": "2026-11-20T02:45:00Z",
+          "message": "Reserve set to MYR 5,000.00.",
+          "actorId": "00000000-0000-4000-8000-000000000010",
+          "visibility": "STAFF_ONLY"
+        }
+      ],
+      "claimantId": "00000000-0000-4000-8000-000000000001",
+      "officerId": "00000000-0000-4000-8000-000000000010",
+      "reserve": "5000.00"
+    }
+  },
+  "settleClaim": {
+    "normal": {
+      "kind": "MOTOR",
+      "market": "MY",
+      "incidentOn": "2026-11-18",
+      "description": "Rear bumper damaged in a collision.",
+      "id": "00000000-0000-4000-8000-000000000101",
+      "claimRef": "CL-101",
+      "currency": "MYR",
+      "status": "SETTLED",
+      "version": 6,
+      "submittedAt": "2026-11-20T01:00:00Z",
+      "closedAt": "2026-11-20T03:00:00Z",
+      "settlement": "4200.00",
+      "requests": [
+        {
+          "id": "00000000-0000-4000-8000-000000000201",
+          "question": "Workshop estimate for bumper repair?",
+          "askedAt": "2026-11-20T01:12:00Z",
+          "answer": "Parts, labour and paint total MYR 5,000.",
+          "answeredAt": "2026-11-20T02:30:00Z"
+        }
+      ],
+      "timeline": [
+        {
+          "type": "CLAIM_SUBMITTED",
+          "at": "2026-11-20T01:00:00Z",
+          "message": "Claim received.",
+          "actorId": "00000000-0000-4000-8000-000000000001",
+          "visibility": "CLAIMANT_VISIBLE"
+        },
+        {
+          "type": "CLAIM_ASSIGNED",
+          "at": "2026-11-20T01:05:00Z",
+          "message": "An officer is reviewing your claim.",
+          "actorId": "00000000-0000-4000-8000-000000000010",
+          "visibility": "CLAIMANT_VISIBLE"
+        },
+        {
+          "type": "INFO_REQUESTED",
+          "at": "2026-11-20T01:12:00Z",
+          "message": "Workshop estimate for bumper repair?",
+          "actorId": "00000000-0000-4000-8000-000000000010",
+          "visibility": "CLAIMANT_VISIBLE"
+        },
+        {
+          "type": "INFO_PROVIDED",
+          "at": "2026-11-20T02:30:00Z",
+          "message": "Parts, labour and paint total MYR 5,000.",
+          "actorId": "00000000-0000-4000-8000-000000000001",
+          "visibility": "CLAIMANT_VISIBLE"
+        },
+        {
+          "type": "RESERVE_SET",
+          "at": "2026-11-20T02:45:00Z",
+          "message": "Reserve set to MYR 5,000.00.",
+          "actorId": "00000000-0000-4000-8000-000000000010",
+          "visibility": "STAFF_ONLY"
+        },
+        {
+          "type": "CLAIM_SETTLED",
+          "at": "2026-11-20T03:00:00Z",
+          "message": "Settled for MYR 4,200.00.",
+          "actorId": "00000000-0000-4000-8000-000000000010",
+          "visibility": "CLAIMANT_VISIBLE"
+        }
+      ],
+      "claimantId": "00000000-0000-4000-8000-000000000001",
+      "officerId": "00000000-0000-4000-8000-000000000010",
+      "reserve": "0.00"
+    }
+  },
+  "rejectClaim": {
+    "normal": {
+      "kind": "MOTOR",
+      "market": "MY",
+      "incidentOn": "2026-11-18",
+      "description": "Rear bumper damaged in a collision.",
+      "id": "00000000-0000-4000-8000-000000000101",
+      "claimRef": "CL-101",
+      "currency": "MYR",
+      "status": "REJECTED",
+      "version": 3,
+      "submittedAt": "2026-11-20T01:00:00Z",
+      "closedAt": "2026-11-20T01:12:00Z",
+      "settlement": null,
+      "requests": [],
+      "timeline": [
+        {
+          "type": "CLAIM_SUBMITTED",
+          "at": "2026-11-20T01:00:00Z",
+          "message": "Claim received.",
+          "actorId": "00000000-0000-4000-8000-000000000001",
+          "visibility": "CLAIMANT_VISIBLE"
+        },
+        {
+          "type": "CLAIM_ASSIGNED",
+          "at": "2026-11-20T01:05:00Z",
+          "message": "An officer is reviewing your claim.",
+          "actorId": "00000000-0000-4000-8000-000000000010",
+          "visibility": "CLAIMANT_VISIBLE"
+        },
+        {
+          "type": "CLAIM_REJECTED",
+          "at": "2026-11-20T01:12:00Z",
+          "message": "Duplicate incident confirmed by claimant.",
+          "actorId": "00000000-0000-4000-8000-000000000010",
+          "visibility": "CLAIMANT_VISIBLE"
+        }
+      ],
+      "claimantId": "00000000-0000-4000-8000-000000000001",
+      "officerId": "00000000-0000-4000-8000-000000000010",
+      "reserve": null
+    }
+  },
+  "workload": {
+    "normal": {
+      "unassigned": 0,
+      "awaitingInfo": 0,
+      "openByOfficer": [
+        {
+          "officerId": "00000000-0000-4000-8000-000000000010",
+          "displayName": "Farah",
+          "count": 1
+        },
+        {
+          "officerId": "00000000-0000-4000-8000-000000000011",
+          "displayName": "Arjun",
+          "count": 0
+        }
+      ],
+      "closedLast7Days": 0
+    }
+  },
+  "exposure": {
+    "empty": {
+      "lastAppliedAt": null,
+      "byCurrency": []
+    },
+    "normal": {
+      "lastAppliedAt": "2026-11-20T02:45:00Z",
+      "byCurrency": [
+        {
+          "currency": "MYR",
+          "openClaims": 1,
+          "awaitingEstimate": 0,
+          "knownOutstanding": "5000.00"
+        }
+      ]
+    }
+  }
+}

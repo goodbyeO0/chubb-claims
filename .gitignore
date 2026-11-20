@@ -1,0 +1,8 @@
+.venv/
+.env
+**/target/
+**/node_modules/
+**/dist/
+**/.angular/
+**/test-results/
+**/playwright-report/
