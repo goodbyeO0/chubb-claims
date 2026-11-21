@@ -7,6 +7,12 @@ import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
 public class ClaimsApplication {
-    public static void main(String[] args) { SpringApplication.run(ClaimsApplication.class, args); }
-    @Bean Clock clock() { return Clock.systemUTC(); }
+  public static void main(String[] args) {
+    SpringApplication.run(ClaimsApplication.class, args);
+  }
+
+  @Bean
+  Clock clock() {
+    return Clock.systemUTC();
+  }
 }

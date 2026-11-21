@@ -37,6 +37,8 @@ class Browser:
                 if raw:
                     raise ValueError('Unexpected response body on 204')
                 return None
+            if response.headers.get_content_type() != 'application/json':
+                raise ValueError('Expected application/json response')
             return json.loads(raw)
 
     def login(self, username):

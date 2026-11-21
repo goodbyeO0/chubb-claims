@@ -6,3 +6,5 @@
 **/.angular/
 **/test-results/
 **/playwright-report/
+
+__pycache__/
