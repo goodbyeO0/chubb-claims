@@ -7,9 +7,9 @@ Workload is synchronous SQL. Exposure is asynchronous; `lastAppliedAt` includes 
 ## Trace a delayed change
 
 ```sh
-docker compose logs -f api
+docker compose -p chubb-review logs -f api
 # Search one recorded eventId in the output:
-docker compose logs api | rg 'eventId=YOUR_EVENT_UUID'
+docker compose -p chubb-review logs api | rg 'eventId=YOUR_EVENT_UUID'
 ```
 
 The expected sequence for a reserve is `reserve_saved`, `event_published`, then `snapshot_updated` or `snapshot_skipped`. `publish_retry` leaves the outbox pending. Logs carry eventId, claimRef and claimVersion, never incident descriptions, credentials, tokens or command bodies. `outbox_pending` logs batch size and oldest age. Deployment profile JSON example:

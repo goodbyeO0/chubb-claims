@@ -6,7 +6,7 @@ From the repository root (`readme_main_impl/`), with Docker Engine and Compose r
 
 ```sh
 API_PORT=18080 docker compose -p chubb-review up --build -d
-curl --retry 60 --retry-connrefused --retry-delay 2 -fsS http://localhost:18080/actuator/health
+curl --retry 60 --retry-all-errors --retry-delay 2 --retry-max-time 180 --max-time 5 -fsS http://localhost:18080/actuator/health
 ```
 
 Open **http://localhost:18080**. Angular and the API are served from the same Spring Boot container. The health response is exactly `{"status":"UP"}`. Omit `API_PORT=18080` to use port 8080, provided it is free. On Linux Docker Desktop, use `docker --context desktop-linux compose` if your default context is different. The first build downloads dependencies and can take several minutes.
