@@ -1,1 +1,1 @@
-export { FixtureApi as ApiImplementation } from "./fixture-api";
+export { HttpApi as ApiImplementation } from "./http-api";

@@ -1,58 +1,76 @@
 # Chubb APAC claims workbench
 
-## Current status and local preview
+## Run the complete application
 
-Backend stages 0–6 are complete. The Angular fixture UI implements the claimant and officer workflows with fictional browser-local data. **Real API integration (stage 8) is pending**; the user requested a review pause before that stage. Actual commands, results and decisions are recorded in [AI-JOURNAL.md](AI-JOURNAL.md).
-
-### Preview the frontend
-
-Requires Node.js 24 and npm. From this repository root:
+From the repository root (`readme_main_impl/`), with Docker Engine and Compose running:
 
 ```sh
-cd frontend
-npm ci
-npx playwright install chromium # once, for browser tests
-npm run build
-npm run test:fixture
-npm start -- --host 127.0.0.1
+API_PORT=18080 docker compose -p chubb-review up --build -d
+curl --retry 60 --retry-connrefused --retry-delay 2 -fsS http://localhost:18080/actuator/health
 ```
 
-Open **http://127.0.0.1:14200**. This build makes no backend requests. Sign in with one of these sample accounts; all use password `local-demo-only`:
+Open **http://localhost:18080**. Angular and the API are served from the same Spring Boot container. The health response is exactly `{"status":"UP"}`. Omit `API_PORT=18080` to use port 8080, provided it is free. On Linux Docker Desktop, use `docker --context desktop-linux compose` if your default context is different. The first build downloads dependencies and can take several minutes.
 
-| Username | Role |
-|---|---|
-| aina, daniel | Claimant |
-| farah, arjun | Officer |
+| Local demo username | Role | Password |
+|---|---|---|
+| aina, daniel | Claimant | local-demo-only |
+| farah, arjun | Officer | local-demo-only |
 
-Try Aina → report an incident → sign out → Farah → pick up the new case → ask a question → Aina → reply → Farah → save assessment → confirm settlement. Use Daniel and Arjun for a separate rejection. Reports reflect the fixture state. Stay in the same browser tab when switching personas; records persist in that browser's local storage. Clear site data for this preview origin to reset the sample records.
+These fictional identities are seeded only by the `local` Spring profile used in Compose. Database and Kafka data persist in named volumes. An API restart ends in-memory sessions; sign in again. `docker compose -p chubb-review down` stops the project and keeps its data. Do not add `-v` when preserving cases.
 
-Fixture-only scenarios: append `?scenario=empty`, `loading`, `error` or `permission` to a list URL. On a staff case URL, `?scenario=conflict` makes the next action conflict once, refreshes the latest record and requires reconfirmation. These scenarios are for UI verification, not server behavior. Screenshots/traces on test failure are under `frontend/test-results/` and the HTML report is under `frontend/playwright-report/`.
+**Walkthrough:** Aina reports an MY motor incident. Farah picks it up and asks for the workshop estimate. Aina replies “Initial estimate is MYR 5,000.” Farah records reserve `5000.00`, checks Reports after processing, then confirms settlement `4200.00`. Aina sees the decision, without staff assessment history. Daniel and Arjun can independently record an SG property incident, clarify a duplicate report and reject it with a case-specific reason.
 
-### Run and test the backend
+## Test commands
 
-Requires Docker Engine with Compose, Java 21 for host-side backend tests and Python 3 for contract checks. Maven 3.9.11 is supplied by `backend/mvnw`; the Docker build does not require host Java. Port 18080 avoids an unrelated application on 8080 in this workspace.
+Host tests require Java 21, Node.js 24/npm and Python 3. Docker must be available to Testcontainers; Maven 3.9.11 is provided by `backend/mvnw`. Docker-only application startup does not require host Java or Node.
 
 ```sh
-# From this repository root:
-API_PORT=18080 docker compose -p chubb-foundation up --build -d
-curl -fsS http://localhost:18080/actuator/health
-(cd backend && ./mvnw test)
+# From the repository root:
 python3 -m venv .venv
-.venv/bin/pip install PyYAML 'jsonschema[format]' openapi-spec-validator
+.venv/bin/pip install -r verification/requirements.txt
 .venv/bin/python verification/check_contract.py
+(cd backend && ./mvnw test)
+(cd frontend && npm ci && npx playwright install chromium)
+(cd frontend && npm run build && npm run test:fixture)
+
+# Against the running Compose app (creates fictional test claims):
 .venv/bin/python verification/api_smoke.py --base http://localhost:18080 --through decision
 .venv/bin/python verification/backend_gate.py --base http://localhost:18080
+(cd frontend && E2E_BASE_URL=http://localhost:18080 npm run test:e2e)
+docker compose -p chubb-review logs --since=10m api
 ```
 
-On Linux Docker Desktop, use `docker --context desktop-linux compose` if needed. If Testcontainers cannot discover Docker, set `DOCKER_HOST=unix://$HOME/.docker/desktop/docker.sock`. Keep the daemon running. Do not delete an existing database volume to retry a failed test. The same demo accounts are seeded only with the backend's `local` profile; their records are separate from the frontend fixtures.
+Set `JAVA_HOME` to your Java 21 installation if it is not the default. On Linux Docker Desktop, if Testcontainers cannot discover Docker, set `DOCKER_HOST=unix://$HOME/.docker/desktop/docker.sock`. The fixture suite owns port 14200; stop any manual fixture server first. Playwright saves failure screenshots/traces under `frontend/test-results/` and an HTML report under `frontend/playwright-report/`.
 
-The backend uses Spring Boot 4.0/Java 21, PostgreSQL 17 and Kafka 4.2. Financial commands persist claim/audit/outbox atomically; a retrying publisher and monotonic snapshot consumer update exposure asynchronously. Workload is live SQL. Currency totals stay separate and NULL reserves mean unassessed. See [reporting operations and limitations](docs/OPERATIONS.md) and [UI design decisions](docs/UI-DESIGN.md). This is a local assessment app, not a deployed payment or coverage system.
+Actual results, failed attempts, decisions and verification revisions are in [AI-JOURNAL.md](AI-JOURNAL.md). The [acceptance matrix](docs/06-test-cases.md) defines the requirements. Browser integration tests create fresh claims and compare report deltas with a baseline; avoid editing other claims concurrently during that suite.
+
+## Development and fixture preview
+
+```sh
+# Real API development: start Compose above, then in another terminal:
+(cd frontend && npm start -- --host 127.0.0.1)
+# Open http://127.0.0.1:14201; the dev proxy targets localhost:18080.
+
+# Independent fixture preview, without a backend:
+(cd frontend && npm run start:fixture -- --host 127.0.0.1)
+# Open http://127.0.0.1:14200.
+```
+
+Production uses the HTTP adapter. Only the explicit `fixture` build configuration selects sample data; an API error never activates fixtures. `npm run build:fixture` produces the fixture bundle. Fixture scenarios append `?scenario=empty`, `loading`, `error` or `permission` to a list URL, or `?scenario=conflict` to a case URL. Keep the same browser tab when switching fixture personas; records persist in that origin's local storage. Clear its site data to reset sample records. Real API records are independent of fixture records.
+
+## Architecture and scope
+
+Spring Boot 4.0 / Java 21, Angular 21 / Tailwind 4, PostgreSQL 17 and Kafka 4.2. The supplied OpenAPI spec is the contract and the original Flyway migration is preserved. Cookie sessions and native Angular XSRF headers protect commands. Explicit role-specific views keep staff reserves and audit identity out of claimant responses. Optimistic versions prevent stale updates; a 409 refreshes the detail and requires a new confirmation.
+
+Financial commands commit the claim, audit event and full exposure outbox payload in one transaction. HTTP success does not wait for Kafka. Publication retries pending records; the consumer applies only newer financial versions. Workload is live SQL; exposure is eventually consistent with an explicit last-update time. Currency totals stay separate; NULL means awaiting estimate, and settlement releases the full reserve. See [reporting operations](docs/OPERATIONS.md) and [UI decisions](docs/UI-DESIGN.md).
+
+This delivery is tested locally with Compose, not deployed. It has no external policy verification, payments, documents or notifications. Lists are unpaginated for a bounded assessment dataset, sessions are in memory and the publisher is single-instance. The deployment profile enables Secure cookies and JSON stdout; an actual deployment additionally requires HTTPS, environment secrets and authorized identity provisioning without local demo seeds. [The submission checklist below](#before-sending-the-link) separates technical verification from the candidate's final review and repository sharing.
 
 Implementation guide for Codex and Izhan. Build a locally runnable application for reporting motor and property incidents, assessing claims and tracking team workload and outstanding reserves. The reviewer should be able to sign in as a claimant, respond to an officer’s question and see the final decision. Staff should be able to explain each decision from the timeline and trace a delayed dashboard update using one event ID.
 
 **Start with the [OpenAPI contract](api/openapi.yaml).** It defines the HTTP operations, actors, payloads, examples and error codes. The [database migration](backend/src/main/resources/db/migration/V1__claims.sql) defines storage. The [Kafka contract](api/exposure-event.schema.json) defines the reporting message. An HTTP response is a role-specific view of the data. Returning a database entity directly would expose internal fields.
 
-This is a starting pack. The application, Maven wrapper, Compose file, application tests and Angular workspace are implementation deliverables. Commands in the stage guides become available as their steps are built.
+The original starting pack supplied the contracts, migration and acceptance guides. The application, Maven wrapper, Compose file, backend tests and Angular workspace are now included. The stage guides remain the acceptance criteria; the journal records actual verification.
 
 ## Folder structure and working directory
 

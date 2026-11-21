@@ -1,3 +1,4 @@
+import { provideHttpClient } from "@angular/common/http";
 import { inject, provideAppInitializer } from "@angular/core";
 import { bootstrapApplication } from "@angular/platform-browser";
 import { CanActivateFn, provideRouter, Router } from "@angular/router";
@@ -20,6 +21,7 @@ const guard: CanActivateFn = (route) => {
 };
 bootstrapApplication(App, {
   providers: [
+    provideHttpClient(),
     { provide: WorkbenchApi, useClass: ApiImplementation },
     provideAppInitializer(() => inject(WorkbenchApi).bootstrap()),
     provideRouter([

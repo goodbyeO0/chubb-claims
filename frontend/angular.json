@@ -27,19 +27,40 @@
                   "maximumWarning": "600kB",
                   "maximumError": "800kB"
                 }
+              ],
+              "fileReplacements": [
+                {
+                  "replace": "src/app/api-provider.ts",
+                  "with": "src/app/api-provider.fixture.ts"
+                }
+              ]
+            },
+            "production": {
+              "optimization": true,
+              "outputHashing": "all",
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "600kB",
+                  "maximumError": "800kB"
+                }
               ]
             }
           },
-          "defaultConfiguration": "fixture"
+          "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular/build:dev-server",
           "configurations": {
             "fixture": {
               "buildTarget": "claims:build:fixture"
+            },
+            "development": {
+              "buildTarget": "claims:build:production",
+              "proxyConfig": "proxy.conf.json"
             }
           },
-          "defaultConfiguration": "fixture"
+          "defaultConfiguration": "development"
         }
       }
     }

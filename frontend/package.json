@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "start": "ng serve --configuration fixture --port 14200",
-    "build": "ng build --configuration fixture",
+    "start": "ng serve --configuration development --port 14201",
+    "build": "ng build --configuration production",
     "test:fixture": "playwright test --project=fixture",
-    "test:e2e": "playwright test --project=integration"
+    "test:e2e": "playwright test --project=integration",
+    "start:fixture": "ng serve --configuration fixture --port 14200",
+    "build:fixture": "ng build --configuration fixture"
   },
   "dependencies": {
     "@angular/common": "21.2.26",

@@ -26,7 +26,7 @@ export default defineConfig({
   webServer: integration
     ? undefined
     : {
-        command: "npm start -- --host 127.0.0.1",
+        command: "npm run start:fixture -- --host 127.0.0.1",
         url: "http://127.0.0.1:14200",
         reuseExistingServer: false,
         timeout: 120_000,
