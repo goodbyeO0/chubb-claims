@@ -14,7 +14,30 @@ journalctl --user -u cloudflared-chubb -n 50 --no-pager
 systemctl --user stop cloudflared-chubb
 ```
 
-The service starts with the user's systemd session. This does not guarantee availability after logout or a reboot before login. Docker Desktop and the application must also be started. No automatic production deployment is configured.
+Automatic startup is configured on this laptop: Docker Desktop is enabled at graphical sign-in, `chubb-app.service` waits for its daemon and starts the existing Compose image, and `cloudflared-chubb.service` starts the tunnel. PostgreSQL, Kafka and the API have `unless-stopped` restart policies. No terminal commands are needed after logging in. The site is unavailable while the laptop is off or asleep, and startup before graphical login is not provided by Docker Desktop. Opening the lid resumes the existing services when the laptop wakes.
+
+The startup service uses the existing image and does not pull or build on every login. Source updates still require the explicit build/deploy command below. Nginx is not involved: Spring Boot serves both Angular and the API, and Cloudflare provides public HTTPS.
+
+```sh
+systemctl --user status docker-desktop chubb-app cloudflared-chubb
+# Restart only Chubb, preserving data:
+systemctl --user restart chubb-app
+# Stop the app and public tunnel for this session:
+systemctl --user stop cloudflared-chubb chubb-app
+# Disable automatic startup of Chubb (Docker Desktop remains enabled):
+systemctl --user disable --now cloudflared-chubb chubb-app
+```
+
+The reproducible app unit and startup script are in `ops/`. This unit uses the laptop's current checkout path; adjust WorkingDirectory and ExecStart before installing elsewhere. Startup retries Docker readiness and health, and systemd retries failed starts. Installation on this same laptop:
+
+```sh
+mkdir -p ~/.config/systemd/user
+cp ops/chubb-app.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now docker-desktop chubb-app
+```
+
+No automatic production deployment is configured.
 
 ## Private settings
 

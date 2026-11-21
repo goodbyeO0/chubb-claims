@@ -1,5 +1,6 @@
 services:
   db:
+    restart: unless-stopped
     image: postgres:17.12
     environment:
       POSTGRES_DB: claims
@@ -15,6 +16,7 @@ services:
       driver: json-file
       options: {max-size: 10m, max-file: '3'}
   kafka:
+    restart: unless-stopped
     image: apache/kafka:4.2.2
     volumes: [claims-kafka:/var/lib/kafka/data]
     environment:
@@ -32,6 +34,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
     logging: *logging
   api:
+    restart: unless-stopped
     build: .
     ports: ["127.0.0.1:${API_PORT:-8080}:8080"]
     environment:
