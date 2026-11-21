@@ -106,11 +106,15 @@ Chubb asks for a Git repository with meaningful development history, an applicat
 
 ### Before sending the link
 
-- [ ] Use `git status --short` and `git log --oneline --reverse` to check that the intended files, tests and journal are committed and the history shows the actual development process.
-- [ ] Verify the exact submission commit from a separate clean checkout and fresh local database. Follow only the reviewer README to start the application, log in and exercise a real workflow. Record the command, outcome, test results and any gaps.
-- [ ] Put startup prerequisites, one-command launch, URL, local demo credentials, test commands, implemented scope and limitations at the top of the reviewer README. Include a link to the AI journal.
-- [ ] Prepare to walk through a claimant-to-officer handoff in the shared Angular app and explain the resulting workload and outstanding exposure. Trace one operation from its OpenAPI contract to its database change. Explain why the response is synchronous, where Kafka fits, and how the dashboard handles delayed or repeated events.
-- [ ] Record one scope decision with its reason and the evidence behind it. Explain what was deferred and why. Check that the repository URL opens the intended revision and that the hiring panel can access it under the chosen sharing arrangement.
+- [x] Commit the implementation, tests and journal in meaningful stages; review the diff and Git history. The migration and API contracts are unchanged from the supplied baseline.
+- [x] Verify from a separate clean checkout and a fresh database. Revision `343e648ee7cedaa871acd2f814785aa21ad8e665` passed the clean build, SQL smoke, real browser flows, all-operation API gate and same-volume restart. Subsequent handover documentation does not change application code. See the dated journal for commands and evidence.
+- [x] Put prerequisites, startup URL, local credentials, run/test commands, scope and limitations at the top of this README.
+- [x] Prepare the [reviewer walkthrough](docs/05-integration.md), with tested handoff, decisions and exposure reconciliation. The journal includes an eventId trace through save, retry, publication and application.
+- [x] Record scope decisions: single-instance local operation and bounded unpaginated lists are intentional; external policy decisions, payment execution and high-availability coordination are deferred. See [operations](docs/OPERATIONS.md).
+- [ ] Candidate performs final source review/sign-off and rehearses the walkthrough. Automated verification is not a claim of human acceptance.
+- [ ] Configure/publish the repository and verify the hiring panel can access the intended revision. No remote URL is configured in this checkout; repository sharing has not been performed.
+
+Verified test totals: **17 backend tests**, **6 fixture browser tests**, **4 real API browser tests**, plus **18 API operations / 100 contract examples**. No tests were skipped. This is a locally tested Compose delivery, not a hosted deployment.
 
 ## Development tools for Codex
 
