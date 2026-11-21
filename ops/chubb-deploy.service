@@ -1,0 +1,10 @@
+[Unit]
+Description=Deploy successful Chubb master CI image
+After=chubb-app.service
+
+[Service]
+Type=oneshot
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/.local/lib/chubb-deploy/auto-deploy.py
+TimeoutStartSec=900
+UMask=0077

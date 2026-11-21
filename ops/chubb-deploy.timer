@@ -1,0 +1,10 @@
+[Unit]
+Description=Check for a tested Chubb deployment every minute
+
+[Timer]
+OnStartupSec=90
+OnUnitInactiveSec=60
+Unit=chubb-deploy.service
+
+[Install]
+WantedBy=timers.target

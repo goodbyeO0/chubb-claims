@@ -16,7 +16,7 @@ systemctl --user stop cloudflared-chubb
 
 Automatic startup is configured on this laptop: Docker Desktop is enabled at graphical sign-in, `chubb-app.service` waits for its daemon and starts the existing Compose image, and `cloudflared-chubb.service` starts the tunnel. PostgreSQL, Kafka and the API have `unless-stopped` restart policies. No terminal commands are needed after logging in. The site is unavailable while the laptop is off or asleep, and startup before graphical login is not provided by Docker Desktop. Opening the lid resumes the existing services when the laptop wakes.
 
-The startup service uses the existing image and does not pull or build on every login. Source updates still require the explicit build/deploy command below. Nginx is not involved: Spring Boot serves both Angular and the API, and Cloudflare provides public HTTPS.
+The startup service uses the existing image and does not pull or build on every login. Successful master pushes are deployed automatically by the separate timer described below. Nginx is not involved: Spring Boot serves both Angular and the API, and Cloudflare provides public HTTPS.
 
 ```sh
 systemctl --user status docker-desktop chubb-app cloudflared-chubb
@@ -37,7 +37,7 @@ systemctl --user daemon-reload
 systemctl --user enable --now docker-desktop chubb-app
 ```
 
-No automatic production deployment is configured.
+Automatic deployment targets this review demo; it is not an always-on production host.
 
 ## Private settings
 
@@ -55,7 +55,40 @@ Cloudflare `cert.pem` and tunnel JSON credentials remain outside Git and Docker 
 2. Frontend: Node 24, locked npm install, production Angular build and fixture Playwright tests.
 3. Integration, after both jobs pass: build the packaged app, start isolated PostgreSQL/Kafka, run real-API Playwright tests and both HTTP verification scripts, collect results and remove test volumes.
 
-GitHub-hosted Ubuntu runners are used. Permissions are read-only, actions are pinned to commit SHAs, and artifacts expire after seven days. No runner or credentials from another project are reused. CI checks changes; it does not restart the laptop's public demo. To apply a reviewed update locally:
+GitHub-hosted Ubuntu runners are used. Permissions are read-only, actions are pinned to commit SHAs, and artifacts expire after seven days. No runner or credentials from another project are reused. After successful master-push integration tests, CI exports the exact tested Docker image as a seven-day artifact. A local service downloads and deploys that artifact automatically.
+
+## Automatic deployment
+
+Push to `master` → all CI jobs pass → tested image artifact → laptop deploys within about one minute plus download/startup time. No manual rebuild is required. Pull requests, failed checks and other branches never deploy. A `[skip ci]` commit does not deploy; push normally or rerun the relevant push workflow when a deployment is wanted.
+
+`chubb-deploy.timer` runs every minute while your user session is running. It uses the existing local GitHub CLI login to read this repository's Actions metadata and artifacts. Credentials are not passed to containers or uploaded to GitHub. There is no self-hosted runner registered to this public repository and no inbound deployment port.
+
+The installed controller is a trusted local copy in `~/.local/lib/chubb-deploy/`; it does not execute scripts downloaded from the repository. It checks the exact latest master SHA and the successful push run, downloads its image, rechecks master before switching, and updates only the API container. Local Compose settings, `.env`, PostgreSQL/Kafka volumes and your source working tree remain intact. Changes to host infrastructure/Compose settings or the controller itself still require a deliberate local installation; automatic deployment covers the packaged frontend/backend image.
+
+The previous image is retained. If startup health fails, the controller restores that image and marks the run attempt failed so it does not loop every minute. A rerun or new commit allows another attempt. Application rollback does not undo database migrations; the existing migration remains unchanged. Updates briefly interrupt the demo and end its in-memory login sessions. If the laptop is offline, deployment waits until it is online with Docker running. Artifacts expire after seven days; rerun the master push workflow if its artifact has expired.
+
+```sh
+# Check deployment and the exact deployed commit:
+systemctl --user status chubb-deploy.timer
+journalctl --user -u chubb-deploy.service -n 40 --no-pager
+cat ~/.local/state/chubb-deploy/state.json
+# Check now, or pause/resume automatic deployment:
+systemctl --user start chubb-deploy.service
+systemctl --user disable --now chubb-deploy.timer
+systemctl --user enable --now chubb-deploy.timer
+```
+
+To install/update the trusted controller on this laptop:
+
+```sh
+mkdir -p ~/.local/lib/chubb-deploy ~/.config/systemd/user
+install -m 700 ops/auto-deploy.py ~/.local/lib/chubb-deploy/auto-deploy.py
+cp ops/chubb-deploy.service ops/chubb-deploy.timer ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now chubb-deploy.timer
+```
+
+GitHub's green CI status means the image is tested and ready. Local deployment success is recorded in the service journal and state file, since the laptop may be asleep when CI finishes. For a deliberate manual deployment instead:
 
 ```sh
 docker --context desktop-linux compose -p chubb-review up --build -d

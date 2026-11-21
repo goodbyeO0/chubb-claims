@@ -4,6 +4,8 @@
 
 Repository: https://github.com/goodbyeO0/chubb-claims
 
+Successful pushes to `master` automatically deploy the tested app image to the review laptop. The laptop must be awake and signed in; see [deployment status and controls](docs/HOSTING-AND-CI.md#automatic-deployment).
+
 Public review preview: **https://chubb.ciptasys.com** (available while the host computer, Docker and tunnel are running). See [hosting, private settings and CI](docs/HOSTING-AND-CI.md).
 
 ## Run the complete application
