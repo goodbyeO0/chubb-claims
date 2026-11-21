@@ -1,5 +1,10 @@
 .venv/
 .env
+.env.*
+!.env.example
+**/.cloudflared/
+*.pem
+*.key
 **/target/
 **/node_modules/
 **/dist/

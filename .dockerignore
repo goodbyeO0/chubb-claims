@@ -8,3 +8,7 @@
 **/playwright-report
 **/__pycache__
 .env
+.env.*
+**/.cloudflared
+**/*.pem
+**/*.key

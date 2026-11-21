@@ -55,6 +55,10 @@ test("I1/I2/I4: real session reload, claimant handoff, CSRF and full reserve rel
   const session = cookies.find((c) => c.name === "JSESSIONID");
   expect(session?.httpOnly).toBe(true);
   expect(session?.sameSite).toBe("Lax");
+  if (baseURL?.startsWith("https://")) {
+    expect(session?.secure, "HTTPS session cookie must be Secure").toBe(true);
+    expect(cookies.find((c) => c.name === "XSRF-TOKEN")?.secure).toBe(true);
+  }
   await farah.getByRole("button", { name: "Unassigned", exact: true }).click();
   await expect(
     farah.getByRole("link", { name: c.ref, exact: true }),

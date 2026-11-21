@@ -39,6 +39,8 @@ services:
       DB_URL: jdbc:postgresql://db:5432/claims
       DB_PASSWORD: ${DB_PASSWORD:-claims-local-only}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SERVER_SERVLET_SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      SERVER_FORWARD_HEADERS_STRATEGY: ${FORWARD_HEADERS_STRATEGY:-none}
     depends_on:
       db: {condition: service_healthy}
     logging: *logging

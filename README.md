@@ -1,5 +1,7 @@
 # Chubb APAC claims workbench
 
+Public review preview: **https://chubb.ciptasys.com** (available while the host computer, Docker and tunnel are running). See [hosting, private settings and CI](docs/HOSTING-AND-CI.md).
+
 ## Run the complete application
 
 From the repository root (`readme_main_impl/`), with Docker Engine and Compose running:
@@ -64,7 +66,7 @@ Spring Boot 4.0 / Java 21, Angular 21 / Tailwind 4, PostgreSQL 17 and Kafka 4.2.
 
 Financial commands commit the claim, audit event and full exposure outbox payload in one transaction. HTTP success does not wait for Kafka. Publication retries pending records; the consumer applies only newer financial versions. Workload is live SQL; exposure is eventually consistent with an explicit last-update time. Currency totals stay separate; NULL means awaiting estimate, and settlement releases the full reserve. See [reporting operations](docs/OPERATIONS.md) and [UI decisions](docs/UI-DESIGN.md).
 
-This delivery is tested locally with Compose, not deployed. It has no external policy verification, payments, documents or notifications. Lists are unpaginated for a bounded assessment dataset, sessions are in memory and the publisher is single-instance. The deployment profile enables Secure cookies and JSON stdout; an actual deployment additionally requires HTTPS, environment secrets and authorized identity provisioning without local demo seeds. [The submission checklist below](#before-sending-the-link) separates technical verification from the candidate's final review and repository sharing.
+The application is tested with Compose and exposed as a review demo through a Cloudflare tunnel. It has no external policy verification, payments, documents or notifications. Lists are unpaginated for a bounded assessment dataset, sessions are in memory and the publisher is single-instance. The deployment profile enables Secure cookies and JSON stdout; an actual deployment additionally requires HTTPS, environment secrets and authorized identity provisioning without local demo seeds. [The submission checklist below](#before-sending-the-link) separates technical verification from the candidate's final review and repository sharing.
 
 Implementation guide for Codex and Izhan. Build a locally runnable application for reporting motor and property incidents, assessing claims and tracking team workload and outstanding reserves. The reviewer should be able to sign in as a claimant, respond to an officer’s question and see the final decision. Staff should be able to explain each decision from the timeline and trace a delayed dashboard update using one event ID.
 
@@ -114,7 +116,7 @@ Chubb asks for a Git repository with meaningful development history, an applicat
 - [ ] Candidate performs final source review/sign-off and rehearses the walkthrough. Automated verification is not a claim of human acceptance.
 - [ ] Configure/publish the repository and verify the hiring panel can access the intended revision. No remote URL is configured in this checkout; repository sharing has not been performed.
 
-Verified test totals: **17 backend tests**, **6 fixture browser tests**, **4 real API browser tests**, plus **18 API operations / 100 contract examples**. No tests were skipped. This is a locally tested Compose delivery, not a hosted deployment.
+Verified test totals: **17 backend tests**, **6 fixture browser tests**, **4 real API browser tests**, plus **18 API operations / 100 contract examples**. No tests were skipped. The Compose delivery is also verified through its public HTTPS review tunnel; it is not a production deployment.
 
 ## Development tools for Codex
 
