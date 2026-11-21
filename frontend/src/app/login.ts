@@ -30,7 +30,6 @@ import { PageState } from "./shared";
           autocomplete="username"
           formControlName="username"
           required
-          autofocus
         />
         <label for="password">Password</label
         ><input

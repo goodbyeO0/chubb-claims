@@ -33,6 +33,10 @@ textarea {
 :focus-visible {
   outline: 3px solid #087dba;
 }
+/* Route/skip-link focus lands on this landmark, not an interactive control. */
+main:focus {
+  outline: none;
+}
 button,
 .button {
   display: inline-flex;

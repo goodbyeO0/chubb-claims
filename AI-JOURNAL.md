@@ -139,3 +139,9 @@ Initial unit validation detected an ordering cycle through graphical-session.tar
 Final startup verification PASS: a controlled systemctl --user restart chubb-app stopped and started the Compose services successfully using the final script. Result=success, ActiveState=active; public HTTPS health returned UP and all 6 claims remained. Docker Desktop, chubb-app and cloudflared-chubb are all enabled and active. Did not reboot the host or stop unrelated applications; actual next-login behavior is configured and unit-validated, not claimed as an observed reboot test.
 
 Remote regression run https://github.com/goodbyeO0/chubb-claims/actions/runs/44927583645 at b132697 completed SUCCESS: backend/contract, frontend/fixture and packaged integration jobs all passed. Final journal-only commit skips CI; no code changes after that successful run.
+
+## 2026-11-22 — Initial focus and premature login validation
+
+Izhan reported a blue outline around the page and a red username border on initial load/refresh, then requested a fix and push. Root cause: login autofocus competes with route-level main landmark focus, blurring the empty required input and marking it touched; the global focus-visible rule also outlines the whole main landmark. Removed login autofocus and suppressed only the structural main landmark outline. Retained route/skip-link focus and visible outlines on interactive controls. No backend/API/migration changes.
+
+Added a browser regression for initial login and reload: main receives navigation focus without an outline, both fields remain untouched, Tab focuses username with a visible outline, and leaving the empty username marks it touched as expected. Production Angular build PASS (348.81 kB); all 7 fixture browser tests PASS (29.9s), including existing keyboard dialog, workflow and responsive cases. Diff/whitespace reviewed. Public deployment and CI results follow below.

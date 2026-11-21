@@ -18,6 +18,34 @@ const test = base.extend<{ noApi: void }>({
   ],
 });
 
+test("Login load and refresh leave fields untouched and preserve keyboard focus", async ({
+  page,
+}) => {
+  await page.goto("/login");
+  for (const refresh of [false, true]) {
+    if (refresh) await page.reload();
+    await expect(page.locator("main")).toBeFocused();
+    await expect(page.locator("main")).toHaveCSS("outline-style", "none");
+    await expect(page.getByLabel("Username", { exact: true })).not.toHaveClass(
+      /ng-touched/,
+    );
+    await expect(page.getByLabel("Password", { exact: true })).not.toHaveClass(
+      /ng-touched/,
+    );
+    await page.keyboard.press("Tab");
+    await expect(page.getByLabel("Username", { exact: true })).toBeFocused();
+    await expect(page.getByLabel("Username", { exact: true })).toHaveCSS(
+      "outline-style",
+      "solid",
+    );
+    await page.keyboard.press("Tab");
+    await expect(page.getByLabel("Password", { exact: true })).toBeFocused();
+    await expect(page.getByLabel("Username", { exact: true })).toHaveClass(
+      /ng-touched/,
+    );
+  }
+});
+
 test("U1/U2: keyboard intake and complete cross-role handoff with private assessment", async ({
   page,
 }) => {
