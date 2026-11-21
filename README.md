@@ -1,20 +1,52 @@
 # Chubb APAC claims workbench
 
-## Local development status
+## Current status and local preview
 
-Implementation is in progress; see [AI-JOURNAL.md](AI-JOURNAL.md) for executed gates. The supplied stage descriptions below are acceptance criteria, not claims that all features exist.
+Backend stages 0–6 are complete. The Angular fixture UI implements the claimant and officer workflows with fictional browser-local data. **Real API integration (stage 8) is pending**; the user requested a review pause before that stage. Actual commands, results and decisions are recorded in [AI-JOURNAL.md](AI-JOURNAL.md).
 
-Prerequisites: Docker Engine with Compose, Java 21 for host-side backend tests, Python 3 for contract checks. Maven 3.9.11 is supplied by `backend/mvnw`. The Docker build does not require host Java.
+### Preview the frontend
+
+Requires Node.js 24 and npm. From this repository root:
+
+```sh
+cd frontend
+npm ci
+npx playwright install chromium # once, for browser tests
+npm run build
+npm run test:fixture
+npm start -- --host 127.0.0.1
+```
+
+Open **http://127.0.0.1:14200**. This build makes no backend requests. Sign in with one of these sample accounts; all use password `local-demo-only`:
+
+| Username | Role |
+|---|---|
+| aina, daniel | Claimant |
+| farah, arjun | Officer |
+
+Try Aina → report an incident → sign out → Farah → pick up the new case → ask a question → Aina → reply → Farah → save assessment → confirm settlement. Use Daniel and Arjun for a separate rejection. Reports reflect the fixture state. Stay in the same browser tab when switching personas; records persist in that browser's local storage. Clear site data for this preview origin to reset the sample records.
+
+Fixture-only scenarios: append `?scenario=empty`, `loading`, `error` or `permission` to a list URL. On a staff case URL, `?scenario=conflict` makes the next action conflict once, refreshes the latest record and requires reconfirmation. These scenarios are for UI verification, not server behavior. Screenshots/traces on test failure are under `frontend/test-results/` and the HTML report is under `frontend/playwright-report/`.
+
+### Run and test the backend
+
+Requires Docker Engine with Compose, Java 21 for host-side backend tests and Python 3 for contract checks. Maven 3.9.11 is supplied by `backend/mvnw`; the Docker build does not require host Java. Port 18080 avoids an unrelated application on 8080 in this workspace.
 
 ```sh
 # From this repository root:
-docker compose up --build -d
-# If 8080 is occupied: API_PORT=18080 docker compose up --build -d
-curl -fsS http://localhost:8080/actuator/health
-(cd backend && ./mvnw -Dtest=FoundationTest test)
+API_PORT=18080 docker compose -p chubb-foundation up --build -d
+curl -fsS http://localhost:18080/actuator/health
+(cd backend && ./mvnw test)
+python3 -m venv .venv
+.venv/bin/pip install PyYAML 'jsonschema[format]' openapi-spec-validator
+.venv/bin/python verification/check_contract.py
+.venv/bin/python verification/api_smoke.py --base http://localhost:18080 --through decision
+.venv/bin/python verification/backend_gate.py --base http://localhost:18080
 ```
 
-On Linux Docker Desktop, if Testcontainers cannot discover Docker, set `DOCKER_HOST=unix://$HOME/.docker/desktop/docker.sock`. Keep the Docker daemon running. Do not delete an existing database volume to retry a failed test.
+On Linux Docker Desktop, use `docker --context desktop-linux compose` if needed. If Testcontainers cannot discover Docker, set `DOCKER_HOST=unix://$HOME/.docker/desktop/docker.sock`. Keep the daemon running. Do not delete an existing database volume to retry a failed test. The same demo accounts are seeded only with the backend's `local` profile; their records are separate from the frontend fixtures.
+
+The backend uses Spring Boot 4.0/Java 21, PostgreSQL 17 and Kafka 4.2. Financial commands persist claim/audit/outbox atomically; a retrying publisher and monotonic snapshot consumer update exposure asynchronously. Workload is live SQL. Currency totals stay separate and NULL reserves mean unassessed. See [reporting operations and limitations](docs/OPERATIONS.md) and [UI design decisions](docs/UI-DESIGN.md). This is a local assessment app, not a deployed payment or coverage system.
 
 Implementation guide for Codex and Izhan. Build a locally runnable application for reporting motor and property incidents, assessing claims and tracking team workload and outstanding reserves. The reviewer should be able to sign in as a claimant, respond to an officer’s question and see the final decision. Staff should be able to explain each decision from the timeline and trace a delayed dashboard update using one event ID.
 

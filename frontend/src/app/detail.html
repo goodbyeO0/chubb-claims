@@ -1,0 +1,248 @@
+<a class="back" [routerLink]="staff?'/staff/queue':'/my-claims'"
+  >← {{staff?'Work queue':'My claims'}}</a
+>
+<app-state [loading]="loading()" [error]="error()" />
+@if(error()){<button (click)="load()" [disabled]="busy()">Refresh claim</button
+>} @if(notice()){
+<p class="notice" role="status">{{notice()}}</p>
+} @if(claim();as c){
+<div class="page-heading">
+  <div>
+    <p class="eyebrow">{{staff?'CASE WORKSPACE':'CLAIM PROGRESS'}}</p>
+    <h1>{{c.claimRef}}</h1>
+    <p class="muted">
+      {{c.kind==='MOTOR'?'Motor':'Property'}} · {{c.market}} · Reported
+      {{c.submittedAt|date:'dd MMM yyyy'}}
+    </p>
+  </div>
+  <span class="badge large" [class.waiting]="c.status==='AWAITING_INFO'"
+    >{{labels[c.status]}}</span
+  >
+</div>
+<div class="next-step">
+  <span class="eyebrow">{{c.closedAt?'DECISION RECORDED':'NEXT STEP'}}</span>
+  <p>{{next()}}</p>
+</div>
+<div class="case-layout">
+  <div class="case-main">
+    <section class="panel">
+      <h2>Incident details</h2>
+      <dl class="facts">
+        <div>
+          <dt>Incident date</dt>
+          <dd>{{c.incidentOn}}</dd>
+        </div>
+        <div>
+          <dt>Market / currency</dt>
+          <dd>{{c.market}} / {{c.currency}}</dd>
+        </div>
+      </dl>
+      <p class="preserve">{{c.description}}</p>
+    </section>
+    @if(c.closedAt){
+    <section class="panel decision">
+      <h2>{{c.status==='SETTLED'?'Settlement recorded':'Claim rejected'}}</h2>
+      @if(c.settlement){
+      <p class="amount">{{c.currency}} {{c.settlement}}</p>
+      }@else{
+      <p class="preserve">{{c.timeline[c.timeline.length-1].message}}</p>
+      }
+      <p class="muted">
+        Closed {{c.closedAt|date:'dd MMM yyyy, HH:mm'}}. This is the recorded
+        claim decision.
+      </p>
+    </section>
+    } @if(c.requests.length){
+    <section class="panel">
+      <h2>Questions & replies</h2>
+      @for(r of c.requests;track r.id){
+      <div class="question">
+        <p class="eyebrow">OFFICER · {{r.askedAt|date:'dd MMM, HH:mm'}}</p>
+        <p class="preserve">{{r.question}}</p>
+        @if(r.answer){
+        <div class="reply">
+          <strong>Claimant’s reply</strong>
+          <p class="preserve">{{r.answer}}</p>
+        </div>
+        }@else{
+        <p class="muted">Awaiting reply</p>
+        }
+      </div>
+      } @if(!staff&&pending()){
+      <form [formGroup]="text" (ngSubmit)="sendText()">
+        <label for="reply">Your reply</label
+        ><textarea
+          id="reply"
+          formControlName="value"
+          rows="3"
+          maxlength="2000"
+          required
+        ></textarea
+        >@if(text.touched&&text.invalid){
+        <p class="field-error">Enter a reply (up to 2,000 characters).</p>
+        }<button class="primary" [disabled]="busy()">Send reply</button>
+      </form>
+      }
+    </section>
+    }
+    <section class="panel">
+      <h2>Claim history</h2>
+      <ol class="timeline">
+        @for(e of c.timeline;track $index){
+        <li>
+          <time>{{e.at|date:'dd MMM yyyy, HH:mm'}}</time>
+          <p class="preserve">{{e.message}}</p>
+          @if(staff&&e.visibility==='STAFF_ONLY'){<small>Staff only</small>}
+        </li>
+        }
+      </ol>
+    </section>
+  </div>
+  @if(staff){
+  <aside class="case-actions">
+    <section class="panel">
+      <p class="eyebrow">CASE OWNERSHIP</p>
+      <h2>
+        {{staffClaim().officerId===null?'Unassigned':mine()?'Assigned to
+        you':'Assigned to another officer'}}
+      </h2>
+      @if(c.status==='SUBMITTED'&&staffClaim().officerId===null){<button
+        class="primary full"
+        [disabled]="busy()"
+        (click)="send('assign')"
+      >
+        Pick up case</button
+      >}@else if(!mine()&&!c.closedAt){
+      <p class="muted">The assigned officer will manage this case.</p>
+      }
+    </section>
+    <section class="panel">
+      <p class="eyebrow">ASSESSMENT · STAFF ONLY</p>
+      <h2>Outstanding reserve</h2>
+      <p class="amount">
+        {{staffClaim().reserve===null?'Awaiting estimate':c.currency+'
+        '+staffClaim().reserve}}
+      </p>
+      <p class="muted">
+        An estimate of outstanding exposure, separate from the final settlement.
+      </p>
+      @if(mine()&&c.status==='UNDER_REVIEW'){
+      <form [formGroup]="reserve">
+        <label for="reserve">Reserve amount ({{c.currency}})</label
+        ><input
+          id="reserve"
+          formControlName="amount"
+          inputmode="decimal"
+          placeholder="0.00"
+          aria-describedby="reserve-help"
+        /><small id="reserve-help"
+          >Use two decimal places. Zero is a known estimate.</small
+        >@if(reserve.touched&&reserve.invalid){
+        <p class="field-error">Enter a nonnegative amount with two decimals.</p>
+        }<button
+          type="button"
+          [disabled]="busy()"
+          (click)="openConfirm('reserve',$event)"
+        >
+          Save assessment
+        </button>
+      </form>
+      }
+    </section>
+    @if(mine()&&c.status==='UNDER_REVIEW'){
+    <section class="panel">
+      <h2>Request information</h2>
+      <form [formGroup]="text" (ngSubmit)="sendText()">
+        <label for="question">Question for claimant</label
+        ><textarea
+          id="question"
+          formControlName="value"
+          rows="3"
+          maxlength="2000"
+          required
+        ></textarea
+        >@if(text.touched&&text.invalid){
+        <p class="field-error">Enter a question (up to 2,000 characters).</p>
+        }<button [disabled]="busy()">Send question</button>
+      </form>
+    </section>
+    <section class="panel final-actions">
+      <p class="eyebrow">FINAL DECISION</p>
+      <h2>Close this case</h2>
+      <p class="muted">
+        Confirm the final amount or provide a reason the claimant can
+        understand.
+      </p>
+      <form [formGroup]="settlement">
+        <label for="settlement">Settlement amount ({{c.currency}})</label
+        ><input
+          id="settlement"
+          formControlName="amount"
+          inputmode="decimal"
+          placeholder="0.00"
+        />@if(settlement.touched&&settlement.invalid){
+        <p class="field-error">Enter a positive amount with two decimals.</p>
+        }<button
+          type="button"
+          class="primary"
+          [disabled]="busy()"
+          (click)="openConfirm('settle',$event)"
+        >
+          Review settlement
+        </button>
+      </form>
+      <hr />
+      <form [formGroup]="rejection">
+        <label for="reason">Rejection reason</label
+        ><textarea
+          id="reason"
+          formControlName="reason"
+          maxlength="2000"
+          rows="3"
+        ></textarea
+        >@if(rejection.touched&&rejection.invalid){
+        <p class="field-error">Enter a case-specific reason.</p>
+        }<button
+          type="button"
+          class="danger"
+          [disabled]="busy()"
+          (click)="openConfirm('reject',$event)"
+        >
+          Review rejection
+        </button>
+      </form>
+    </section>
+    }
+  </aside>
+  }
+</div>
+}
+<dialog
+  #confirmationDialog
+  aria-labelledby="confirm-title"
+  aria-describedby="confirm-description"
+  (cancel)="cancel()"
+>
+  <h2 id="confirm-title">
+    {{confirmation()==='reserve'?'Save this
+    assessment?':confirmation()==='settle'?'Settle this claim?':'Reject this
+    claim?'}}
+  </h2>
+  <p id="confirm-description">
+    {{confirmation()==='reserve'?'This updates the staff estimate.':'This closes
+    the case and records the decision for the claimant.'}}
+  </p>
+  <p class="confirmation-value preserve">{{confirmationValue()}}</p>
+  <div class="form-actions">
+    <button autofocus type="button" (click)="cancel()">Cancel</button
+    ><button
+      type="button"
+      [class.danger]="confirmation()==='reject'"
+      [class.primary]="confirmation()!=='reject'"
+      (click)="confirm()"
+    >
+      Confirm
+      {{confirmation()==='reserve'?'assessment':confirmation()==='settle'?'settlement':'rejection'}}
+    </button>
+  </div>
+</dialog>
