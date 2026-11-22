@@ -1,189 +1,205 @@
-# Chubb APAC claims workbench
+# Chubb claims workbench
 
-[![CI](https://github.com/goodbyeO0/chubb-claims/actions/workflows/ci.yml/badge.svg)](https://github.com/goodbyeO0/chubb-claims/actions/workflows/ci.yml)
+A claims demo for reporting incidents, managing assessments and tracking outstanding exposure.
 
-Repository: https://github.com/goodbyeO0/chubb-claims
+[Try the app](#1-try-the-app) · [How I used AI](#2-how-i-used-ai) · [Timeline](#3-development-and-deployment-timeline) · [Architecture](#4-architecture)
 
-Successful pushes to `master` automatically deploy the tested app image to the review laptop. The laptop must be awake and signed in; see [deployment status and controls](docs/HOSTING-AND-CI.md#automatic-deployment).
+## 1. Try the app
 
-Public review preview: **https://chubb.ciptasys.com** (available while the host computer, Docker and tunnel are running). See [hosting, private settings and CI](docs/HOSTING-AND-CI.md).
+Visit **[chubb.ciptasys.com](https://chubb.ciptasys.com)**. I host this demo locally on my laptop and expose it through a Cloudflare Tunnel connected to my domain. It is available while my laptop, Docker and tunnel are running.
 
-## Run the complete application
+| Users | Role | Password |
+|---|---|---|
+| `aina`, `daniel` | Claimant | `local-demo-only` |
+| `farah`, `arjun` | Officer | `local-demo-only` |
 
-From the repository root (`readme_main_impl/`), with Docker Engine and Compose running:
+**Quick walkthrough — use fictional data:**
+
+1. Sign in as **Aina** and submit a claim.
+2. Sign in as **Farah**, pick up the claim and request more information.
+3. Return as **Aina** to answer the question.
+4. As **Farah**, assess the claim, record a reserve and settle or reject it.
+5. Return as **Aina** to see the decision.
+
+### Prerequisites
+
+- Git, Docker and Docker Compose, with Docker running.
+- Port `18080` available.
+- For tests outside Docker: Java 21, Node.js 24/npm and Python 3. The Maven wrapper is included.
+
+### Run locally
 
 ```sh
+git clone https://github.com/goodbyeO0/chubb-claims.git
+cd chubb-claims
 API_PORT=18080 docker compose -p chubb-review up --build -d
+```
+
+Check that the app is ready:
+
+```sh
 curl --retry 60 --retry-all-errors --retry-delay 2 --retry-max-time 180 --max-time 5 -fsS http://localhost:18080/actuator/health
 ```
 
-Open **http://localhost:18080**. Angular and the API are served from the same Spring Boot container. The health response is exactly `{"status":"UP"}`. Omit `API_PORT=18080` to use port 8080, provided it is free. On Linux Docker Desktop, use `docker --context desktop-linux compose` if your default context is different. The first build downloads dependencies and can take several minutes.
+If you already have the source, run the Compose startup and health-check commands from the folder containing `compose.yaml` (`readme_main_impl/` in my original workspace). The first build can take several minutes. No `.env` is required for a fresh local checkout; Compose provides demo defaults.
 
-| Local demo username | Role | Password |
-|---|---|---|
-| aina, daniel | Claimant | local-demo-only |
-| farah, arjun | Officer | local-demo-only |
+Open **[localhost:18080](http://localhost:18080)** and use the accounts above. The health check should return `{"status":"UP"}`. On Linux Docker Desktop, select the `desktop-linux` Docker context if needed.
 
-These fictional identities are seeded only by the `local` Spring profile used in Compose. Database and Kafka data persist in named volumes. An API restart ends in-memory sessions; sign in again. `docker compose -p chubb-review down` stops the project and keeps its data. Do not add `-v` when preserving cases.
-
-**Walkthrough:** Aina reports an MY motor incident. Farah picks it up and asks for the workshop estimate. Aina replies “Initial estimate is MYR 5,000.” Farah records reserve `5000.00`, checks Reports after processing, then confirms settlement `4200.00`. Aina sees the decision, without staff assessment history. Daniel and Arjun can independently record an SG property incident, clarify a duplicate report and reject it with a case-specific reason.
-
-## Test commands
-
-Host tests require Java 21, Node.js 24/npm and Python 3. Docker must be available to Testcontainers; Maven 3.9.11 is provided by `backend/mvnw`. Docker-only application startup does not require host Java or Node.
+To stop the app while keeping its data:
 
 ```sh
-# From the repository root:
+docker compose -p chubb-review down
+```
+
+Database and Kafka data persist in Docker volumes. Do not add `-v` if you want to keep them. An app restart requires signing in again.
+
+### Run tests
+
+Run from the repository root, with Docker available.
+
+**Contract, backend and fixture UI checks:**
+
+```sh
 python3 -m venv .venv
 .venv/bin/pip install -r verification/requirements.txt
 .venv/bin/python verification/check_contract.py
 (cd backend && ./mvnw test)
 (cd frontend && npm ci && npx playwright install chromium)
 (cd frontend && npm run build && npm run test:fixture)
+```
 
-# Against the running Compose app (creates fictional test claims):
+**Integration checks:** start the local app first. These checks create demo claims.
+
+```sh
 .venv/bin/python verification/api_smoke.py --base http://localhost:18080 --through decision
 .venv/bin/python verification/backend_gate.py --base http://localhost:18080
 (cd frontend && E2E_BASE_URL=http://localhost:18080 npm run test:e2e)
-docker compose -p chubb-review logs --since=10m api
 ```
 
-Set `JAVA_HOME` to your Java 21 installation if it is not the default. On Linux Docker Desktop, if Testcontainers cannot discover Docker, set `DOCKER_HOST=unix://$HOME/.docker/desktop/docker.sock`. The fixture suite owns port 14200; stop any manual fixture server first. Playwright saves failure screenshots/traces under `frontend/test-results/` and an HTML report under `frontend/playwright-report/`.
+See the [test cases and acceptance criteria](docs/06-test-cases.md) and [integration walkthrough](docs/05-integration.md). Actual test results are recorded in [AI-JOURNAL.md](AI-JOURNAL.md).
 
-Actual results, failed attempts, decisions and verification revisions are in [AI-JOURNAL.md](AI-JOURNAL.md). The [acceptance matrix](docs/06-test-cases.md) defines the requirements. Browser integration tests create fresh claims and compare report deltas with a baseline; avoid editing other claims concurrently during that suite.
+## 2. How I used AI
 
-## Development and fixture preview
+I used **ChatGPT Web for planning** and **Codex for implementation and testing**.
 
-```sh
-# Real API development: start Compose above, then in another terminal:
-(cd frontend && npm start -- --host 127.0.0.1)
-# Open http://127.0.0.1:14201; the dev proxy targets localhost:18080.
+### Understand and plan
 
-# Independent fixture preview, without a backend:
-(cd frontend && npm run start:fixture -- --host 127.0.0.1)
-# Open http://127.0.0.1:14200.
-```
-
-Production uses the HTTP adapter. Only the explicit `fixture` build configuration selects sample data; an API error never activates fixtures. `npm run build:fixture` produces the fixture bundle. Fixture scenarios append `?scenario=empty`, `loading`, `error` or `permission` to a list URL, or `?scenario=conflict` to a case URL. Keep the same browser tab when switching fixture personas; records persist in that origin's local storage. Clear its site data to reset sample records. Real API records are independent of fixture records.
-
-## Architecture and scope
-
-Spring Boot 4.0 / Java 21, Angular 21 / Tailwind 4, PostgreSQL 17 and Kafka 4.2. The supplied OpenAPI spec is the contract and the original Flyway migration is preserved. Cookie sessions and native Angular XSRF headers protect commands. Explicit role-specific views keep staff reserves and audit identity out of claimant responses. Optimistic versions prevent stale updates; a 409 refreshes the detail and requires a new confirmation.
-
-Financial commands commit the claim, audit event and full exposure outbox payload in one transaction. HTTP success does not wait for Kafka. Publication retries pending records; the consumer applies only newer financial versions. Workload is live SQL; exposure is eventually consistent with an explicit last-update time. Currency totals stay separate; NULL means awaiting estimate, and settlement releases the full reserve. See [reporting operations](docs/OPERATIONS.md) and [UI decisions](docs/UI-DESIGN.md).
-
-The application is tested with Compose and exposed as a review demo through a Cloudflare tunnel. It has no external policy verification, payments, documents or notifications. Lists are unpaginated for a bounded assessment dataset, sessions are in memory and the publisher is single-instance. The deployment profile enables Secure cookies and JSON stdout; an actual deployment additionally requires HTTPS, environment secrets and authorized identity provisioning without local demo seeds. [The submission checklist below](#before-sending-the-link) separates technical verification from the candidate's final review and repository sharing.
-
-Implementation guide for Codex and Izhan. Build a locally runnable application for reporting motor and property incidents, assessing claims and tracking team workload and outstanding reserves. The reviewer should be able to sign in as a claimant, respond to an officer’s question and see the final decision. Staff should be able to explain each decision from the timeline and trace a delayed dashboard update using one event ID.
-
-**Start with the [OpenAPI contract](api/openapi.yaml).** It defines the HTTP operations, actors, payloads, examples and error codes. The [database migration](backend/src/main/resources/db/migration/V1__claims.sql) defines storage. The [Kafka contract](api/exposure-event.schema.json) defines the reporting message. An HTTP response is a role-specific view of the data. Returning a database entity directly would expose internal fields.
-
-The original starting pack supplied the contracts, migration and acceptance guides. The application, Maven wrapper, Compose file, backend tests and Angular workspace are now included. The stage guides remain the acceptance criteria; the journal records actual verification.
-
-## Folder structure and working directory
-
-In Izhan’s VS Code layout, `CHUBB/` is the folder opened in the editor. **Use `CHUBB/readme_main_impl/` as the application root.** It already contains the API contract and the first database migration. Keep the implementation beside those files so commands and relative links resolve from one place.
-
-| Path relative to the application root | When | What goes here |
-|---|---|---|
-| `README.md`, `AI-JOURNAL.md` | Already present | Start here. Record decisions and actual test runs in the journal as you work. |
-| `api/` | Already present | HTTP contract in `openapi.yaml`, Kafka event schema and UI fixtures. |
-| `docs/`, `verification/` | Already present | Implementation stages, acceptance cases and runnable contract, SQL and HTTP checks. |
-| `backend/` | Migration supplied, app added in stage 1 | Scaffold Spring Boot in this existing directory. Put `pom.xml` and Maven wrappers directly here. Use `src/main/java/` for code and `src/test/java/` for tests. Preserve `src/main/resources/db/migration/V1__claims.sql`. |
-| `compose.yaml` | Create in stage 1 | Local services. Run Docker Compose from the application root. |
-| `frontend/` | Create in stage 7 | Angular workspace beside `backend/`. Put `angular.json` and `package.json` directly here. Run npm commands here. |
-
-**First terminal check.** From `CHUBB/`, run `cd readme_main_impl`. If the terminal already shows `readme_main_impl`, start there. Run `git status` and, if Git recognizes a repository, `git rev-parse --show-toplevel` to find its root. Keep one Git history. The stage guides use “root” for the application directory unless they explicitly discuss Git.
-
-**Reviewer entry point.** If Git reports `CHUBB/` as its root, put the launch command and a link to `readme_main_impl/README.md` in the outer README before submission. Show `cd readme_main_impl` as the first setup command for that checkout. If Git reports `readme_main_impl/` as its root, this README already opens on the repository landing page.
-
-## Start Codex with this instruction
-
-> Work in readme_main_impl/. Read README.md and api/openapi.yaml, then start with the first unfinished stage. Use the API spec as the source of truth. Preserve the existing database migration. Build and test the Spring Boot backend first. Once its tests pass, build the Angular UI with fixture data, verify it, then connect it to the real API. At each stage, review the diff, run the listed tests, record actual results and decisions in AI-JOURNAL.md, and commit each meaningful change. Finish with the submission checklist and verified commands to run and test the app.
-
-## Commit history and submission checklist
-
-Chubb asks for a Git repository with meaningful development history, an application that starts locally, and a running AI journal committed alongside the code. Supporting documentation is at the candidate’s discretion. Submit the repository link by **22 November 2026** (recruiter email).
-
-### During the sprint
-
-1. Check the repository state before starting. In a new repository, commit the supplied contract and implementation pack as the starting point. In an existing repository, preserve its history and any unrelated user changes.
-2. Use AI as the primary interface for code generation. As each coherent change is built, review its diff, run the relevant stage test, record the real result and decision in [AI-JOURNAL.md](AI-JOURNAL.md), then stage the related files and commit. Use a subject that says what behavior changed. Pick boundaries that reflect the work as it actually happens; no particular number of commits or branch strategy is required.
-3. Example subjects for milestones you actually reach: `Add session login and claimant ownership checks`, `Handle concurrent pickup with a version check`, `Apply each reserve update once during Kafka replay`. If a test reveals a defect, record the observed failure and why the fix worked. Preserve the real sequence of work.
-4. Include the candidate’s judgment in the journal. For example, Izhan selected Spring Boot after the initial .NET suggestion because he had previously worked with Spring. That is a planning decision. Add implementation decisions as they occur, with the prompt, what was accepted or challenged, the reason and the evidence. The candidate reviews and signs off on every submitted line.
-
-### Before sending the link
-
-- [x] Commit the implementation, tests and journal in meaningful stages; review the diff and Git history. The migration and API contracts are unchanged from the supplied baseline.
-- [x] Verify from a separate clean checkout and a fresh database. Revision `343e648ee7cedaa871acd2f814785aa21ad8e665` passed the clean build, SQL smoke, real browser flows, all-operation API gate and same-volume restart. Subsequent handover documentation does not change application code. See the dated journal for commands and evidence.
-- [x] Put prerequisites, startup URL, local credentials, run/test commands, scope and limitations at the top of this README.
-- [x] Prepare the [reviewer walkthrough](docs/05-integration.md), with tested handoff, decisions and exposure reconciliation. The journal includes an eventId trace through save, retry, publication and application.
-- [x] Record scope decisions: single-instance local operation and bounded unpaginated lists are intentional; external policy decisions, payment execution and high-availability coordination are deferred. See [operations](docs/OPERATIONS.md).
-- [ ] Candidate performs final source review/sign-off and rehearses the walkthrough. Automated verification is not a claim of human acceptance.
-- [x] Publish the repository and verify unauthenticated access. The public repository is https://github.com/goodbyeO0/chubb-claims; its GitHub Actions runs record remote verification.
-
-Verified test totals: **17 backend tests**, **7 fixture browser tests**, **4 real API browser tests**, plus **18 API operations / 100 contract examples**. No tests were skipped. The Compose delivery is also verified through its public HTTPS review tunnel; it is not a production deployment.
-
-## Development tools for Codex
-
-Use these when they answer a specific implementation question. The contract, migration and acceptance cases govern the project. Each stage can run with the repository commands alone.
-
-| Stage | Recommended use | Verification |
-|---|---|---|
-| Backend, stages 1–6 | Start with the Maven wrapper, Boot 4.0 reference docs and the named Spring Boot tests. If the project is already open in a Spring Tools-enabled IDE, its optional embedded MCP server can show the resolved Boot version, classpath and discovered beans. For example, inspect which security configuration bean was discovered when a login test fails. | Reproduce the behavior with the stage test, e.g. ./mvnw -Dtest=AuthTest test from backend/. Use the Windows wrapper mvnw.cmd on Windows. |
-| Angular, stage 7 | Use the official Angular CLI 21 MCP server from the installed frontend workspace. Ask it to list the project and show examples or best practices for typed reactive forms, standalone components and signals. The newer angular-developer and angular-new-app skills were introduced with Angular 22. Stay with the pinned v21 CLI for this project. | Run npm run build and npm run test:fixture from frontend/. Check keyboard operation and conflict recovery in the browser. |
-| Browser integration, stage 8 | Run the committed Playwright tests. Use a saved trace to investigate a failed claimant/officer handoff. A separate browser MCP is optional for exploratory debugging. | Run npm run test:e2e against the real local backend. Record the command, failing assertion and final result in the AI journal. |
-
-**Local Codex setup for Angular.** After the Angular workspace exists and npm ci has installed its locked CLI, add the following to the local project's .codex/config.toml if you want this helper. Replace cwd with the absolute path to your frontend directory. Forward slashes also work in a Windows TOML path. Starting Node directly uses the project's own CLI without downloading another version.
-
-```toml
-[mcp_servers.angular21]
-command = "node"
-args = ["./node_modules/@angular/cli/bin/ng.js", "mcp", "--read-only", "--local-only"]
-cwd = "C:/projects/chubb-claims/frontend"
-```
-
-Open /mcp in Codex and ask it to run list_projects. Seeing the application from frontend/angular.json confirms the connection; get_best_practices and find_examples are useful next calls. For online documentation use the Angular 21 site. If the server is unavailable, proceed with the CLI and the existing tests.
-
-**Local Codex setup for Spring Tools.** If using this helper, open backend/ in the Spring Tools IDE or extension, enable its embedded MCP server in the AI preferences and restart the IDE if prompted. In Codex, register the local Streamable HTTP endpoint advertised by that installed version, then verify it can identify this project's Boot version. Availability depends on the IDE, transport and workspace. The embedded server is a developer tool and belongs outside the application dependencies and Docker Compose. For a standalone CLI session, the Maven dependency tree and targeted tests are the quicker path.
-
-[Angular 21 MCP commands](https://v21.angular.dev/ai/mcp) · [Angular agent skills announcement](https://blog.angular.dev/announcing-angular-v22-c52bb83a4664) · [Spring Tools MCP setup](https://spring.io/blog/2025/12/04/towards-spring-tools-5-part3/) · [Codex MCP configuration](https://developers.openai.com/codex/mcp/)
-
-## Build order
-
-| Stage | Guide | Evidence before advancing |
-|---|---|---|
-| 0. Contracts | [Workflow and data](docs/01-contract-and-data.md) | OpenAPI syntax, HTTP examples, Kafka schema and fixture consistency pass. |
-| 1. Backend foundation | [Backend steps](docs/02-backend.md#1-foundation) | Clean PostgreSQL migration, schema smoke checks, health endpoint and Spring Boot context pass. |
-| 2. Authentication | [Sessions and access](docs/02-backend.md#2-authentication) | Cookie login, identity, CSRF and logout work through Spring Security. |
-| 3. Intake and ownership | [Claimant operations](docs/02-backend.md#3-intake-and-ownership) | A claimant can submit and read their own claim; the cross-owner access test passes. |
-| 4. Pickup and information | [Staff handoff](docs/02-backend.md#4-pickup-and-information) | Concurrent pickup has one winner; only the claimant can answer the pending question. |
-| 5. Assessment and decisions | [Settlement and rejection](docs/02-backend.md#5-assessment-and-decisions) | Money, terminal states, visibility and optimistic concurrency pass. |
-| 6. Reporting and backend gate | [Kafka and reporting](docs/03-reporting.md) | Both reports, replay, broker recovery and the complete backend suite pass. |
-| 7. UI with fixture data | [Angular UX](docs/04-frontend.md) | Both roles complete their journeys with the fixture adapter, including empty/error states. |
-| 8. Integration and delivery | [Real sessions and walkthrough](docs/05-integration.md) | Clean Compose startup, real browser handoff, dashboard reconciliation and reviewer instructions. |
-
-Use the [case matrix](docs/06-test-cases.md) for concrete expected results. Keep actual runs and decisions in [AI-JOURNAL.md](AI-JOURNAL.md). The contract checker is [verification/check_contract.py](verification/check_contract.py); the SQL smoke test is [verification/schema-smoke.sql](verification/schema-smoke.sql).
-
-## Verification of this starting pack
-
-The supplied OpenAPI document passed structural validation. The checker validated all 100 HTTP examples, the Kafka example and the fixture export. The migration and rollback-only SQL smoke cases ran on a fresh PostgreSQL 17.12 database and created six domain tables. Spring Boot, browser, concurrency and broker tests are acceptance gates for the implementation. The live smoke client runs once the application is available.
-
-## Technology decisions
-
-| Area | Agreed plan |
+| Step | What I did |
 |---|---|
-| Frontend | Angular 21 LTS and aligned CLI, TypeScript 5.9, RxJS 7.8, Node 24 LTS, npm, Tailwind CSS 4. Own a small set of accessible Angular components. Use Angular Router, Reactive Forms, HttpClient and signals. |
-| Backend | Java 21 LTS, Maven 3.9 wrapper, Spring Boot 4.0 line, MVC, Security, Bean Validation, Jackson, Data JPA/Hibernate, PostgreSQL JDBC, Flyway with PostgreSQL support, Kafka, Actuator, SLF4J/Logback. Use the Boot dependency BOM. |
-| Infrastructure | PostgreSQL 17, a local single-node Kafka 4.2 KRaft broker, Docker Compose. One Spring process hosts the API, publisher and consumer. Serve built Angular files from Spring on the same origin. |
-| Tests | JUnit Jupiter, AssertJ, Spring Boot Test, MockMvc, Testcontainers PostgreSQL, real Kafka for the broker gate and Playwright/Chromium in TypeScript. |
-| Version policy | Use application APIs available by **30 April 2026**, the published knowledge cutoff for [GPT-6 Astra](https://developers.openai.com/api/docs/models/gpt-6-astra), selected in Codex as GPT-6 Astra Light. Later maintenance/security patches on the agreed release lines are approved. Reference pins from planning: Boot 4.0.10, PostgreSQL 17.12, Kafka 4.2.2. Verify published coordinates, vendor maintenance and advisories when resolving. Record actual JDK, Node, Maven and container patch versions, commit lockfiles and use fixed image tags/digests. |
-| Security review | Review actual Maven/npm resolution and container image findings. Record relevant fixes or limitations. Revisit a release line if it loses support. Avoid drifting to a new major just to satisfy a generator default. |
+| Understand the task | I researched the assessment in ChatGPT Web and asked it to explain the requirements. |
+| Explore the workflows | I discussed the main flow, alternative flows, invalid actions and flows that must never happen until I understood how this simplified insurance claims process works. |
+| Model the database | I asked it to generate a database ERD using draw.io, shown in the architecture section below. |
+| Connect flows to data | I walked through how each action changes the data and questioned fields that seemed unnecessary. |
+| Choose the stack | I asked for recommendations and challenged some choices. It initially suggested .NET, but I chose Spring Boot because I was more familiar with it. |
+| Check technology versions | I asked it to verify versions against its knowledge cutoff, current documentation and security information, rather than rely only on memory. Version and advisory checks reduce avoidable errors but do not replace a complete dependency security review. |
+| Keep the approach simple | I asked for a straightforward implementation, an OpenAPI specification and a README describing the build plan. The API specification became the source of truth. |
 
-## Scope assumptions
+### Build and verify
 
-One staff team across six **illustrative** markets. Two application roles, CLAIMANT and OFFICER; the team summary is a staff view. The flow supports one owner, one pending question at a time and one final settlement per claim. An officer estimates the reserve and records a decision based on evidence. A settlement records a final amount, closes the case and releases its reserve. External coverage lookup, actual payment transfer, file storage and notification delivery are outside this prototype. A decision is delivered via the claimant timeline. All demo data is fictional.
+| Step | What I did |
+|---|---|
+| Plan three stages | I divided delivery into backend, frontend and integration, with each stage split into smaller features. |
+| Test and fix each feature | For every feature, Codex ran the relevant checks against the [test guide and expected results](docs/06-test-cases.md), [OpenAPI contract](api/openapi.yaml) and stage requirements. If a check failed, Codex investigated, corrected the implementation and reran the checks until they passed before moving to the next feature. Failures, fixes and actual results were recorded in the [AI journal](AI-JOURNAL.md). |
+| Verify the complete stage | After the individual features passed, Codex ran the complete stage checks before moving from backend to frontend, then integration. Passing one feature was not enough to consider the whole stage complete. |
+| Build the backend | Codex implemented and tested the backend features first, preserving the supplied database migration. |
+| Build the frontend | Codex first built the UI using placeholder (fixture) data, without connecting to the real backend. It used Playwright browser tests to verify the user journeys, interactions and error states. Only after these checks passed did it connect the frontend to the real API in the integration stage. |
+| Integrate | Once both stages passed, Codex connected the UI to the real API and tested the complete journeys. A shared request/response contract also makes independent backend and frontend work possible, although I chose to build them sequentially here. |
 
-At delivery, put verified startup, demo users, tests and limitations at the top of the repository README so the hiring panel can use it without reading this build guide. Preserve links to the contract and the journal.
+### Review and deliver
 
-[Original assessment brief](https://docs.google.com/document/d/1dlMvqp0FOMI_TZK1Nj2QHIBo0l_V0BTV/edit)
+| Step | What I did |
+|---|---|
+| Review and record | I asked Codex to review diffs, record actual tests and decisions in the journal, and commit meaningful changes. I paused between stages to inspect the results and manage usage limits. |
+| Host the demo | With extra time, I hosted it on my laptop through Cloudflare and my domain, then added GitHub Actions and automatic deployment. |
+
+Planning guides: [workflow and data](docs/01-contract-and-data.md), [backend](docs/02-backend.md), [reporting](docs/03-reporting.md), [frontend](docs/04-frontend.md) and [OpenAPI contract](api/openapi.yaml).
+
+## 3. Development and deployment timeline
+
+All times below are **Malaysia time (UTC+8), November 2026**. Active time is approximate Codex working time, including tests and tools within a session; it excludes inactive gaps and most explanation-only conversations. Long gaps do not necessarily mean a usage limit was reached.
+
+| Date | Work period | Active time | What happened | Git commits |
+|---|---|---|---|---|
+| 21 Nov | 03:57–04:17 | ~20 min | Backend foundation, login, claim workflows, reserves and settlement. | `9c1f706` → `6c8611e` |
+| 21 Nov | 13:45–14:01 | ~15 min | Finished backend reporting, Kafka and tests; paused because my Codex limit was close. | `5f5f3f4`, `f071372` |
+| 21 Nov | 18:46–19:10 | ~20 min | Built the frontend and integrated the API, with a short review break; paused near the limit. | `7010051`, `cff339c` |
+| 22 Nov | 00:12–00:19 | ~7 min | After the reset, completed final verification and submission documentation. | `343e648`, `2fffea2` |
+| 22 Nov | 00:35–01:04 | ~18 min | Configured Cloudflare hosting, the public repository, CI, private settings and laptop startup. | `504831d`, `c203344`, `b132697`, `2595dca` |
+| 22 Nov | 01:16–01:22 | ~6 min | Fixed login highlighting, tested, pushed and verified the deployed app. | `10f905b`, `8bed6d3` |
+| 22 Nov | 01:35–01:39 | ~4 min | Added automatic deployment of tested GitHub Actions images to local Docker. | `f645d5f` |
+| 22 Nov | 12:49–12:50 | ~1 min | Verified automatic deployment and preservation of existing data. | `67068f3` |
+
+### Time summary
+
+| Activity | Approximate time |
+|---|---|
+| Planning in ChatGPT Web | 40 minutes |
+| Recorded Codex development and verification | 63 minutes (1 hour 3 minutes) |
+| Planning + recorded development | **103 minutes (1 hour 43 minutes)** |
+| Recorded hosting, deployment and UI fix | 29 minutes |
+| Planning + all recorded work above | **132 minutes (2 hours 12 minutes)** |
+
+The development sessions span **20 hours 23 minutes elapsed**. I paused for Codex usage-limit resets and review breaks, so elapsed time is much longer than active time.
+
+These figures are not a complete timesheet: separate personal review, explanations and later documentation edits are not fully counted. Inactive waits are excluded. Totals use original timestamps, so rounded rows may not add up exactly.
+
+For the complete Codex journal, including failures, retries and decisions, see **[AI-JOURNAL.md](AI-JOURNAL.md)**. Use **Ctrl+F and search for `Izhan`** to find my input and decisions.
+
+## 4. Architecture
+
+### Technology stack
+
+![Technology stack: Angular frontend, Spring Boot backend, PostgreSQL and Kafka](docs/images/tech-stack.png)
+
+| Technology | Why it is used / what to know |
+|---|---|
+| Angular 21 | The assessment prefers Angular for both user roles. Although my frontend experience is mainly React, I followed that requirement. Angular runs in the browser; Spring Boot serves its built files. |
+| TypeScript and Tailwind CSS 4 | I already have experience with both from my React work, so I could reuse that familiarity for typed frontend code and styling. |
+| Spring Boot 4.0 and Java 21 | I chose Spring Boot because I have used it before. Its HTTP handling, dependency injection and class-based structure help me organize controllers, services and data access in a maintainable way. This demo has not been load-tested for peak traffic. |
+| One backend application | I kept the early-stage system simple rather than introducing microservices and separate deployments. The API, Kafka publisher and consumer run in one Spring Boot process. |
+| Spring Security sessions | Cookie sessions, role checks and CSRF protection provide straightforward authentication for the same-origin app without building a custom token system. Demo identities are local; production identity provisioning is outside this assessment. |
+| REST/HTTP | User actions need an immediate success or error response. The OpenAPI contract defines the requests and responses shared by frontend and backend. |
+| PostgreSQL 17 and Flyway | Transactions keep claim changes, audit events and outbox records together. Flyway manages the schema; the original migration is preserved. |
+| Kafka 4.2 | I wanted reliable financial reporting updates and a good fit with Spring Boot. Kafka supports retries and replay without making claim requests wait for report processing. It can redeliver messages, so the consumer applies only newer claim versions to prevent duplicate or older events from changing totals again. |
+| Docker Compose | Packages the app and its dependencies into a repeatable setup so reviewers can run it on their own machines without installing Java, PostgreSQL or Kafka separately. |
+| JUnit, Testcontainers and Playwright | Backend checks with real infrastructure and browser tests for fixture and integrated flows. |
+
+The stack diagram groups three separate containers under Docker: the app, PostgreSQL and Kafka. The frontend box represents code running in the browser.
+
+The established Spring ecosystem supports ongoing maintenance and integration. Dependency maintenance and security updates remain necessary. References: [Spring Boot](https://spring.io/projects/spring-boot/) and [Spring for Apache Kafka](https://spring.io/projects/spring-kafka/).
+
+**Reporting reliability:** the transactional outbox and version-checked consumer make retries safe for the exposure projection, including when Kafka redelivers a message. Reports can briefly lag behind claim changes because processing is asynchronous.
+
+### Database
+
+![Claims workbench database ERD](docs/images/database-erd.png)
+
+[Open the draw.io ERD file on Google Drive](https://drive.google.com/file/d/1L9-8Wz5qd1a1JzFhSSGiU2jLttPXqeWC/view?usp=sharing).
+
+The database links users to claims, information requests and audit events. Financial changes save an outbox record in the same transaction as the claim; Kafka processing then updates the exposure snapshot. Claim versions prevent stale updates and older reporting events from overwriting newer data.
+
+Outstanding exposure is the total reserve for open claims, grouped by currency. An open claim without a reserve is counted as awaiting an estimate. Settlement closes the claim and removes its reserve from outstanding exposure. The [SQL migration](backend/src/main/resources/db/migration/V1__claims.sql) defines the actual schema.
+
+### Deployment
+
+![Deployment: GitHub Actions image delivered to the laptop and exposed through Cloudflare](docs/images/deployment.png)
+
+**From a code change to a running app:**
+
+1. A push to `master` triggers GitHub Actions.
+2. CI tests the backend, builds and tests the frontend, then tests the packaged app.
+3. A successful run exports the tested Docker image as an artifact.
+4. The laptop's deployment timer checks every minute and deploys the image, usually within one to two minutes plus download and startup time.
+5. The app container is replaced while PostgreSQL and Kafka data volumes are kept. If the startup health check fails, the previous image is restored.
+
+Host configuration changes still require a separate local update.
+
+**How visitors reach the app:**
+
+Visitors reach Cloudflare over HTTPS. The tunnel forwards requests to `localhost:18080` on my laptop, where Spring Boot serves both the frontend files and API. **Nginx is not used.** Startup is configured at laptop sign-in; the site is unavailable while the laptop is off or asleep.
+
+Private `.env` settings and Cloudflare credentials stay outside Git. See [hosting and CI details](docs/HOSTING-AND-CI.md) for configuration and deployment controls.
+
+### Scope and limitations
+
+This is a review demo with fictional accounts, in-memory sessions and a single backend instance. It does not perform policy verification, payment transfers, document storage or notification delivery. See [operations and limitations](docs/OPERATIONS.md).
