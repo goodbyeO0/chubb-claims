@@ -122,7 +122,7 @@ Chubb asks for a Git repository with meaningful development history, an applicat
 - [ ] Candidate performs final source review/sign-off and rehearses the walkthrough. Automated verification is not a claim of human acceptance.
 - [x] Publish the repository and verify unauthenticated access. The public repository is https://github.com/goodbyeO0/chubb-claims; its GitHub Actions runs record remote verification.
 
-Verified test totals: **17 backend tests**, **6 fixture browser tests**, **4 real API browser tests**, plus **18 API operations / 100 contract examples**. No tests were skipped. The Compose delivery is also verified through its public HTTPS review tunnel; it is not a production deployment.
+Verified test totals: **17 backend tests**, **7 fixture browser tests**, **4 real API browser tests**, plus **18 API operations / 100 contract examples**. No tests were skipped. The Compose delivery is also verified through its public HTTPS review tunnel; it is not a production deployment.
 
 ## Development tools for Codex
 

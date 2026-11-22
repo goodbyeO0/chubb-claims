@@ -59,7 +59,7 @@ GitHub-hosted Ubuntu runners are used. Permissions are read-only, actions are pi
 
 ## Automatic deployment
 
-Push to `master` → all CI jobs pass → tested image artifact → laptop deploys within about one minute plus download/startup time. No manual rebuild is required. Pull requests, failed checks and other branches never deploy. A `[skip ci]` commit does not deploy; push normally or rerun the relevant push workflow when a deployment is wanted.
+Push to `master` → all CI jobs pass → tested image artifact → laptop deploys within roughly one to two minutes plus download/startup time. No manual rebuild is required. Pull requests, failed checks and other branches never deploy. A `[skip ci]` commit does not deploy; push normally or rerun the relevant push workflow when a deployment is wanted.
 
 `chubb-deploy.timer` runs every minute while your user session is running. It uses the existing local GitHub CLI login to read this repository's Actions metadata and artifacts. Credentials are not passed to containers or uploaded to GitHub. There is no self-hosted runner registered to this public repository and no inbound deployment port.
 
