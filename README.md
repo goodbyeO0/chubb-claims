@@ -109,20 +109,20 @@ I used **ChatGPT Web for planning** and **Codex for implementation and testing**
 
 | Step | What I did |
 |---|---|
-| Review and record | I asked Codex to review diffs, record actual tests and decisions in the journal, and commit meaningful changes. I paused between stages to inspect the results and manage usage limits. |
+| Review and record | I asked Codex to review diffs, record actual tests and decisions in the journal, and commit meaningful changes. I paused when Codex reached its usage limit and resumed after it reset. |
 | Host the demo | With extra time, I hosted it on my laptop through Cloudflare and my domain, then added GitHub Actions and automatic deployment. |
 
 Planning guides: [workflow and data](docs/01-contract-and-data.md), [backend](docs/02-backend.md), [reporting](docs/03-reporting.md), [frontend](docs/04-frontend.md) and [OpenAPI contract](api/openapi.yaml).
 
 ## 3. Development and deployment timeline
 
-All times below are **Malaysia time (UTC+8), November 2026**. Active time is approximate Codex working time, including tests and tools within a session; it excludes inactive gaps and most explanation-only conversations. Long gaps do not necessarily mean a usage limit was reached.
+All times below are **Malaysia time (UTC+8), November 2026**. Active time is approximate Codex working time, including tests and tools within a session; it excludes inactive gaps and most explanation-only conversations.
 
 | Date | Work period | Active time | What happened | Git commits |
 |---|---|---|---|---|
 | 21 Nov | 03:57–04:17 | ~20 min | Backend foundation, login, claim workflows, reserves and settlement. | `9c1f706` → `6c8611e` |
 | 21 Nov | 13:45–14:01 | ~15 min | Finished backend reporting, Kafka and tests; paused because my Codex limit was close. | `5f5f3f4`, `f071372` |
-| 21 Nov | 18:46–19:10 | ~20 min | Built the frontend and integrated the API, with a short review break; paused near the limit. | `7010051`, `cff339c` |
+| 21 Nov | 18:46–19:10 | ~20 min | Built the frontend and integrated the API; paused near the Codex limit. | `7010051`, `cff339c` |
 | 22 Nov | 00:12–00:19 | ~7 min | After the reset, completed final verification and submission documentation. | `343e648`, `2fffea2` |
 | 22 Nov | 00:35–01:04 | ~18 min | Configured Cloudflare hosting, the public repository, CI, private settings and laptop startup. | `504831d`, `c203344`, `b132697`, `2595dca` |
 | 22 Nov | 01:16–01:22 | ~6 min | Fixed login highlighting, tested, pushed and verified the deployed app. | `10f905b`, `8bed6d3` |
@@ -135,13 +135,10 @@ All times below are **Malaysia time (UTC+8), November 2026**. Active time is app
 |---|---|
 | Planning in ChatGPT Web | 40 minutes |
 | Recorded Codex development and verification | 63 minutes (1 hour 3 minutes) |
-| Planning + recorded development | **103 minutes (1 hour 43 minutes)** |
 | Recorded hosting, deployment and UI fix | 29 minutes |
 | Planning + all recorded work above | **132 minutes (2 hours 12 minutes)** |
 
-The development sessions span **20 hours 23 minutes elapsed**. I paused for Codex usage-limit resets and review breaks, so elapsed time is much longer than active time.
-
-These figures are not a complete timesheet: separate personal review, explanations and later documentation edits are not fully counted. Inactive waits are excluded. Totals use original timestamps, so rounded rows may not add up exactly.
+I paused when Codex reached its usage limit and resumed after it reset. Time spent waiting for the reset is excluded from the active time above.
 
 For the complete Codex journal, including failures, retries and decisions, see **[AI-JOURNAL.md](AI-JOURNAL.md)**. Use **Ctrl+F and search for `Izhan`** to find my input and decisions.
 
