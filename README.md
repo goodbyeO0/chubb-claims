@@ -202,4 +202,4 @@ Private `.env` settings and Cloudflare credentials stay outside Git. See [hostin
 
 ### Scope and limitations
 
-This is a review demo with fictional accounts, in-memory sessions and a single backend instance. It does not perform policy verification, payment transfers, document storage or notification delivery. See [operations and limitations](docs/OPERATIONS.md).
+This demo covers claim submission, assessment, decisions and reporting. Policy checks, actual payments, document uploads and notifications are outside this assessment. See [operations and limitations](docs/OPERATIONS.md) for technical details.
