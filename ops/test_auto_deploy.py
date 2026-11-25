@@ -47,7 +47,7 @@ class DeploymentTests(unittest.TestCase):
     def test_success_records_deployed_revision_and_previous_image(self):
         activate = Mock()
         state = self.scenario(activate)
-        activate.assert_called_once_with(f'chubb-app:{SHA}')
+        activate.assert_called_once_with(f'claims-app:{SHA}')
         self.assertEqual(state['sha'], SHA)
         self.assertEqual(state['previous_image'], 'previous-image')
 
@@ -55,7 +55,7 @@ class DeploymentTests(unittest.TestCase):
         activate = Mock(side_effect=[RuntimeError('health failed'), None])
         state = self.scenario(activate)
         self.assertEqual([call.args[0] for call in activate.call_args_list],
-                         [f'chubb-app:{SHA}', 'previous-image'])
+                         [f'claims-app:{SHA}', 'previous-image'])
         self.assertEqual(state['failed'], [42, 1])
         self.assertNotIn('sha', state)
 

@@ -1,0 +1,23 @@
+[Unit]
+Description=Claims workbench application
+DefaultDependencies=no
+Conflicts=shutdown.target
+Before=shutdown.target
+Wants=docker-desktop.service
+After=graphical-session.target docker-desktop.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=%h/Projects/claims-workbench
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/Projects/claims-workbench/ops/start-local.sh
+ExecStop=/usr/local/bin/docker --context desktop-linux compose -p claims-review stop
+TimeoutStartSec=480
+TimeoutStopSec=90
+Restart=on-failure
+RestartSec=20
+
+[Install]
+WantedBy=graphical-session.target

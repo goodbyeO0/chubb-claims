@@ -10,12 +10,13 @@ import tempfile
 import time
 import urllib.request
 
-REPO = 'goodbyeO0/chubb-claims'
+REPO = 'goodbyeO0/claims-workbench'
 WORKFLOW = 'ci.yml'
-ROOT = Path('/home/izhan/Projects/Chubb/readme_main_impl')
-STATE_DIR = Path.home() / '.local/state/chubb-deploy'
+ROOT = Path(os.environ.get('CLAIMS_ROOT', str(Path.home() / 'Projects/claims-workbench')))
+STATE_DIR = Path.home() / '.local/state/claims-deploy'
 DOCKER = ['docker', '--context', 'desktop-linux']
-LIVE_IMAGE = 'chubb-review-api:latest'
+LIVE_IMAGE = 'claims-review-api:latest'
+COMPOSE_PROJECT = os.environ.get('CLAIMS_COMPOSE_PROJECT', 'claims-review')
 
 
 def run(args, **kwargs):
@@ -56,7 +57,7 @@ def activate(image):
     run(DOCKER + ['tag', image, LIVE_IMAGE])
     # Operational settings and secrets remain local. Only the API image changes.
     env = {**os.environ, 'APP_IMAGE': LIVE_IMAGE}
-    run(DOCKER + ['compose', '-p', 'chubb-review', 'up', '--no-deps',
+    run(DOCKER + ['compose', '-p', COMPOSE_PROJECT, 'up', '--no-deps',
                   '--no-build', '--pull', 'never', '-d', 'api'], cwd=ROOT, env=env)
     if not healthy():
         raise RuntimeError('New app failed its health check')
@@ -76,7 +77,7 @@ def main():
         except BlockingIOError:
             return
         # Do not restart an app that the operator deliberately stopped.
-        active = subprocess.run(['systemctl', '--user', 'is-active', '--quiet', 'chubb-app'])
+        active = subprocess.run(['systemctl', '--user', 'is-active', '--quiet', 'claims-app'])
         if active.returncode:
             return
         head = api('commits/master')['sha']
@@ -101,13 +102,13 @@ def main():
         name = f'deploy-image-{head}'
         if not any(a['name'] == name and not a['expired'] for a in artifacts):
             return
-        previous = output(DOCKER + ['inspect', 'chubb-review-api-1', '--format', '{{.Image}}'])
+        previous = output(DOCKER + ['inspect', f'{COMPOSE_PROJECT}-api-1', '--format', '{{.Image}}'])
         print(f'Downloading tested image for {head}, CI run {run_id}', flush=True)
-        with tempfile.TemporaryDirectory(prefix='chubb-deploy-') as directory:
+        with tempfile.TemporaryDirectory(prefix='claims-deploy-') as directory:
             run(['gh', 'run', 'download', str(run_id), '--repo', REPO,
                  '--name', name, '--dir', directory])
-            run(DOCKER + ['load', '--input', str(Path(directory) / 'chubb-image.tar.gz')])
-        image = f'chubb-app:{head}'
+            run(DOCKER + ['load', '--input', str(Path(directory) / 'claims-image.tar.gz')])
+        image = f'claims-app:{head}'
         output(DOCKER + ['image', 'inspect', image, '--format', '{{.Id}}'])
         # A newer push during download must not be replaced by this older build.
         if api('commits/master')['sha'] != head:

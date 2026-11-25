@@ -76,9 +76,9 @@ jobs:
     timeout-minutes: 25
     env:
       API_PORT: '18080'
-      COMPOSE_PROJECT_NAME: chubb-ci
+      COMPOSE_PROJECT_NAME: claims-ci
       E2E_BASE_URL: http://localhost:18080
-      APP_IMAGE: chubb-app:${{ github.sha }}
+      APP_IMAGE: claims-app:${{ github.sha }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -103,12 +103,12 @@ jobs:
       - run: python verification/backend_gate.py --base http://localhost:18080
       - name: Export tested deployment image
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        run: docker save "$APP_IMAGE" | gzip > chubb-image.tar.gz
+        run: docker save "$APP_IMAGE" | gzip > claims-image.tar.gz
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           name: deploy-image-${{ github.sha }}
-          path: chubb-image.tar.gz
+          path: claims-image.tar.gz
           compression-level: 0
           retention-days: 7
       - name: Save container logs

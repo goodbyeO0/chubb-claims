@@ -1,4 +1,4 @@
-# Chubb claims workbench
+# Claims workbench
 
 A claims demo for reporting incidents, managing assessments and tracking outstanding exposure.
 
@@ -6,7 +6,7 @@ A claims demo for reporting incidents, managing assessments and tracking outstan
 
 ## 1. Try the app
 
-Visit **[chubb.ciptasys.com](https://chubb.ciptasys.com)**. I host this demo locally on my laptop and expose it through a Cloudflare Tunnel connected to my domain. It is available while my laptop, Docker and tunnel are running.
+Visit **[claims.ciptasys.com](https://claims.ciptasys.com)**. I host this demo locally on my laptop and expose it through a Cloudflare Tunnel connected to my domain. It is available while my laptop, Docker and tunnel are running.
 
 | Users | Role | Password |
 |---|---|---|
@@ -30,9 +30,9 @@ Visit **[chubb.ciptasys.com](https://chubb.ciptasys.com)**. I host this demo loc
 ### Run locally
 
 ```sh
-git clone https://github.com/goodbyeO0/chubb-claims.git
-cd chubb-claims
-API_PORT=18080 docker compose -p chubb-review up --build -d
+git clone https://github.com/goodbyeO0/claims-workbench.git
+cd claims-workbench
+API_PORT=18080 docker compose -p claims-review up --build -d
 ```
 
 Check that the app is ready:
@@ -48,7 +48,7 @@ Open **[localhost:18080](http://localhost:18080)** and use the accounts above. T
 To stop the app while keeping its data:
 
 ```sh
-docker compose -p chubb-review down
+docker compose -p claims-review down
 ```
 
 Database and Kafka data persist in Docker volumes. Do not add `-v` if you want to keep them. An app restart requires signing in again.
@@ -179,7 +179,18 @@ Outstanding exposure is the total reserve for open claims, grouped by currency. 
 
 ### Deployment
 
-![Deployment: GitHub Actions image delivered to the laptop and exposed through Cloudflare](docs/images/deployment.png)
+```mermaid
+flowchart TD
+    GitHub[GitHub repository] --> CI[GitHub Actions: build and test]
+    CI --> Image[Tested Docker image artifact]
+    Image --> Timer[Laptop deployment timer]
+    Timer --> App[App container: Spring Boot serves Angular and API]
+    Browser[Browser] --> Edge[Cloudflare: claims.ciptasys.com]
+    Edge --> Tunnel[Cloudflare Tunnel]
+    Tunnel --> App
+    App --> DB[PostgreSQL container and volume]
+    App --> Kafka[Kafka container and volume]
+```
 
 **From a code change to a running app:**
 

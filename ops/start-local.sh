@@ -18,5 +18,5 @@ if [[ "$ready" != true ]]; then
 fi
 
 # Startup uses the previously built image; it never builds or pulls new code.
-docker --context desktop-linux compose -p chubb-review up --no-build --pull never -d
+docker --context desktop-linux compose -p "${CLAIMS_COMPOSE_PROJECT:-claims-review}" up --no-build --pull never -d
 curl --retry 60 --retry-all-errors --retry-delay 2 --retry-max-time 180 --max-time 5 -fsS http://127.0.0.1:18080/actuator/health

@@ -1,0 +1,10 @@
+[Unit]
+Description=Check for a tested Claims deployment every minute
+
+[Timer]
+OnStartupSec=90
+OnUnitInactiveSec=60
+Unit=claims-deploy.service
+
+[Install]
+WantedBy=timers.target
